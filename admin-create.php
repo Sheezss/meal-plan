@@ -115,13 +115,26 @@ $admins_result = mysqli_query($conn, $admins_query);
     <title>Create Administrator - Meal Plan System</title>
     <style>
         :root {
-            --admin-purple: #8e44ad;
-            --admin-dark: #7d3c98;
-            --primary-green: #27ae60;
+            /* Nutrition-based color palette - matching admin dashboard */
+            --calories-red: #e74c3c;
+            --calories-light: #f1948a;
+            --protein-blue: #3498db;
+            --protein-light: #85c1e9;
+            --carbs-yellow: #f39c12;
+            --carbs-light: #f8c471;
+            --fats-purple: #9b59b6;
+            --fats-light: #d7bde2;
+            --vitamins-green: #27ae60;
+            --vitamins-light: #a9dfbf;
+            --minerals-teal: #1abc9c;
+            --minerals-light: #76d7c4;
+            
             --text-dark: #2c3e50;
             --text-light: #7f8c8d;
-            --border-color: #e1f5e1;
-            --light-bg: #f9fdf7;
+            --border-color: #e5e8e8;
+            --light-bg: #f8f9f9;
+            --card-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
         }
         
         * {
@@ -142,15 +155,16 @@ $admins_result = mysqli_query($conn, $admins_query);
             min-height: 100vh;
         }
         
+        /* Sidebar with nutrition gradient - matching admin dashboard */
         .sidebar {
             width: 280px;
-            background: white;
-            border-right: 1px solid var(--border-color);
+            background: linear-gradient(180deg, var(--text-dark), #1a2632);
+            color: white;
             padding: 25px 20px;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(142, 68, 173, 0.1);
+            box-shadow: 2px 0 10px var(--shadow);
         }
         
         .logo {
@@ -158,13 +172,13 @@ $admins_result = mysqli_query($conn, $admins_query);
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
         
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--admin-purple), var(--admin-dark));
+            background: linear-gradient(135deg, var(--vitamins-green), var(--minerals-teal));
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -175,28 +189,28 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .logo-text h2 {
-            color: var(--admin-purple);
+            color: white;
             font-size: 22px;
         }
         
         .logo-text p {
-            color: var(--text-light);
+            color: rgba(255,255,255,0.7);
             font-size: 12px;
         }
         
         .admin-welcome {
-            background: linear-gradient(135deg, #f8f0ff, #f3e5ff);
+            background: rgba(255,255,255,0.1);
             padding: 20px;
             border-radius: 15px;
             margin-bottom: 30px;
             text-align: center;
-            border: 1px solid var(--admin-purple);
+            border: 1px solid rgba(255,255,255,0.2);
         }
         
         .admin-avatar {
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, var(--admin-purple), var(--admin-dark));
+            background: linear-gradient(135deg, var(--vitamins-green), var(--minerals-teal));
             border-radius: 50%;
             margin: 0 auto 15px;
             display: flex;
@@ -220,7 +234,7 @@ $admins_result = mysqli_query($conn, $admins_query);
             display: flex;
             align-items: center;
             padding: 12px 15px;
-            color: var(--text-dark);
+            color: rgba(255,255,255,0.8);
             text-decoration: none;
             border-radius: 10px;
             transition: all 0.3s;
@@ -228,13 +242,13 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .nav-menu a:hover {
-            background: #f8f0ff;
-            color: var(--admin-purple);
+            background: rgba(255,255,255,0.1);
+            color: white;
             transform: translateX(5px);
         }
         
         .nav-menu a.active {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
         }
         
@@ -261,9 +275,14 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .welcome-message h1 {
-            color: var(--admin-purple);
+            color: var(--text-dark);
             font-size: 28px;
             margin-bottom: 5px;
+        }
+        
+        .welcome-message h1 i {
+            color: var(--vitamins-green);
+            margin-right: 10px;
         }
         
         .welcome-message p {
@@ -286,31 +305,46 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .btn-primary {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
         }
         
         .btn-primary:hover {
-            background: var(--admin-dark);
+            background: #1e8449;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
         }
         
         .btn-outline {
             background: white;
-            color: var(--admin-purple);
-            border: 2px solid var(--admin-purple);
+            color: var(--vitamins-green);
+            border: 2px solid var(--vitamins-green);
         }
         
         .btn-outline:hover {
-            background: #f8f0ff;
+            background: var(--vitamins-light);
+        }
+        
+        .btn-warning {
+            background: var(--carbs-yellow);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--calories-red);
+            color: white;
+        }
+        
+        .btn-info {
+            background: var(--protein-blue);
+            color: white;
         }
         
         .content-section {
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 20px var(--shadow);
             border: 1px solid var(--border-color);
             margin-bottom: 30px;
         }
@@ -325,11 +359,15 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .section-header h2 {
-            color: var(--admin-purple);
+            color: var(--text-dark);
             font-size: 22px;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        
+        .section-header h2 i {
+            color: var(--vitamins-green);
         }
         
         .message {
@@ -342,13 +380,19 @@ $admins_result = mysqli_query($conn, $admins_query);
         .message.success {
             background: #d4edda;
             color: #155724;
-            border-left-color: #28a745;
+            border-left-color: var(--vitamins-green);
         }
         
         .message.error {
             background: #f8d7da;
             color: #721c24;
-            border-left-color: #dc3545;
+            border-left-color: var(--calories-red);
+        }
+        
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: var(--protein-blue);
         }
         
         .form-grid {
@@ -379,8 +423,8 @@ $admins_result = mysqli_query($conn, $admins_query);
         
         .form-control:focus {
             outline: none;
-            border-color: var(--admin-purple);
-            box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+            border-color: var(--vitamins-green);
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
         }
         
         .admin-table {
@@ -390,8 +434,8 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .admin-table th {
-            background: #f8f0ff;
-            color: var(--admin-purple);
+            background: var(--vitamins-light);
+            color: var(--text-dark);
             font-weight: 600;
             padding: 15px;
             text-align: left;
@@ -404,7 +448,7 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .admin-table tr:hover {
-            background: #f8f0ff;
+            background: var(--light-bg);
         }
         
         .badge {
@@ -415,18 +459,23 @@ $admins_result = mysqli_query($conn, $admins_query);
         }
         
         .badge-admin {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
         }
         
         .badge-super {
-            background: #e74c3c;
+            background: var(--calories-red);
             color: white;
+        }
+        
+        .badge-info {
+            background: var(--protein-light);
+            color: var(--text-dark);
         }
         
         .security-note {
             background: #fff3cd;
-            border-left: 4px solid #ffc107;
+            border-left: 4px solid var(--carbs-yellow);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -436,6 +485,63 @@ $admins_result = mysqli_query($conn, $admins_query);
         .security-note i {
             margin-right: 8px;
             color: #856404;
+        }
+        
+        .strength-indicator {
+            margin-top: 5px;
+            font-size: 11px;
+        }
+        
+        .guidelines-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .guideline-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .guideline-card h4 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .guideline-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .guideline-card li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .activity-item {
+            font-size: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--vitamins-green);
         }
         
         @media (max-width: 768px) {
@@ -466,27 +572,27 @@ $admins_result = mysqli_query($conn, $admins_query);
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-shield-alt"></i>
+                    <i class="fas fa-leaf"></i>
                 </div>
                 <div class="logo-text">
-                    <h2>Admin Panel</h2>
-                    <p>Administrator Access</p>
+                    <h2>NutriPlan KE</h2>
+                    <p>Admin Panel</p>
                 </div>
             </div>
             
             <div class="admin-welcome">
                 <div class="admin-avatar">
-                    <i class="fas fa-user-shield"></i>
+                    <i class="fas fa-user-md"></i>
                 </div>
                 <h3><?php echo htmlspecialchars($current_admin['full_name']); ?></h3>
-                <p style="color: var(--admin-purple); font-size: 13px;">Super Administrator</p>
+                <p style="color: var(--vitamins-green); font-size: 13px;">Nutrition Administrator</p>
             </div>
             
             <ul class="nav-menu">
-                <li><a href="admin-dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="admin-dashboard.php"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
                 <li><a href="admin-create.php" class="active"><i class="fas fa-user-plus"></i> Create Admin</a></li>
-                <li><a href="admin-users.php"><i class="fas fa-users-cog"></i> Manage Users</a></li>
-                <li><a href="admin-recipes.php"><i class="fas fa-utensils"></i> Manage Recipes</a></li>
+                <li><a href="admin-dashboard.php#users"><i class="fas fa-users-cog"></i> Manage Users</a></li>
+                <li><a href="admin-dashboard.php#recipes"><i class="fas fa-utensils"></i> Manage Recipes</a></li>
                 <li><a href="dashboard.php"><i class="fas fa-exchange-alt"></i> Switch to User</a></li>
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
@@ -496,8 +602,8 @@ $admins_result = mysqli_query($conn, $admins_query);
         <main class="main-content">
             <div class="top-header">
                 <div class="welcome-message">
-                    <h1>Create Administrator</h1>
-                    <p>Add new administrators to the system</p>
+                    <h1><i class="fas fa-user-shield"></i> Create Administrator</h1>
+                    <p>Add new administrators to the nutrition system</p>
                 </div>
                 <div class="header-actions">
                     <span class="badge badge-admin">
@@ -523,7 +629,7 @@ $admins_result = mysqli_query($conn, $admins_query);
             <!-- Create Admin Form -->
             <div class="content-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-user-shield"></i> New Administrator</h2>
+                    <h2><i class="fas fa-user-plus"></i> New Administrator</h2>
                 </div>
                 
                 <form method="POST" action="" onsubmit="return validateForm()">
@@ -539,7 +645,7 @@ $admins_result = mysqli_query($conn, $admins_query);
                             <input type="email" id="email" name="email" class="form-control" 
                                    placeholder="admin@example.com" required>
                             <small style="color: var(--text-light); font-size: 11px;">
-                                If email exists, user will be promoted to admin
+                                <i class="fas fa-info-circle"></i> If email exists, user will be promoted to admin
                             </small>
                         </div>
                         
@@ -596,7 +702,7 @@ $admins_result = mysqli_query($conn, $admins_query);
                     <tbody>
                         <?php while ($admin = mysqli_fetch_assoc($admins_result)): ?>
                             <tr>
-                                <td>#<?php echo $admin['user_id']; ?></td>
+                                <td><strong>#<?php echo $admin['user_id']; ?></strong></td>
                                 <td>
                                     <strong><?php echo htmlspecialchars($admin['full_name']); ?></strong>
                                 </td>
@@ -611,9 +717,17 @@ $admins_result = mysqli_query($conn, $admins_query);
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo date('M d, Y', strtotime($admin['date_registered'])); ?></td>
                                 <td>
-                                    <span style="color: #27ae60;">
+                                    <?php echo date('M d, Y', strtotime($admin['date_registered'])); ?>
+                                    <div style="font-size: 11px; color: var(--text-light);">
+                                        <?php 
+                                        $days_ago = floor((time() - strtotime($admin['date_registered'])) / (60 * 60 * 24));
+                                        echo $days_ago . ' days ago';
+                                        ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="color: var(--vitamins-green);">
                                         <i class="fas fa-circle" style="font-size: 10px;"></i> Active
                                     </span>
                                 </td>
@@ -624,38 +738,38 @@ $admins_result = mysqli_query($conn, $admins_query);
             </div>
             
             <!-- Admin Creation Guidelines -->
-            <div class="content-section" style="background: #f8f0ff;">
-                <h3 style="color: var(--admin-purple); margin-bottom: 15px;">
-                    <i class="fas fa-clipboard-list"></i> Admin Creation Guidelines
+            <div class="content-section" style="background: var(--vitamins-light);">
+                <h3 style="color: var(--text-dark); margin-bottom: 15px;">
+                    <i class="fas fa-clipboard-list" style="color: var(--vitamins-green);"></i> Admin Creation Guidelines
                 </h3>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <div>
-                        <h4 style="color: var(--text-dark); margin-bottom: 10px;">
-                            <i class="fas fa-check-circle" style="color: #27ae60;"></i> DO:
+                <div class="guidelines-grid">
+                    <div class="guideline-card">
+                        <h4 style="color: var(--vitamins-green);">
+                            <i class="fas fa-check-circle"></i> DO:
                         </h4>
-                        <ul style="list-style: none; padding-left: 0;">
-                            <li style="margin-bottom: 8px;">✓ Use corporate email addresses</li>
-                            <li style="margin-bottom: 8px;">✓ Set strong passwords (8+ chars)</li>
-                            <li style="margin-bottom: 8px;">✓ Verify identity before granting access</li>
-                            <li style="margin-bottom: 8px;">✓ Log all admin creation actions</li>
+                        <ul>
+                            <li><i class="fas fa-check" style="color: var(--vitamins-green);"></i> Use corporate email addresses</li>
+                            <li><i class="fas fa-check" style="color: var(--vitamins-green);"></i> Set strong passwords (8+ chars)</li>
+                            <li><i class="fas fa-check" style="color: var(--vitamins-green);"></i> Verify identity before granting access</li>
+                            <li><i class="fas fa-check" style="color: var(--vitamins-green);"></i> Log all admin creation actions</li>
                         </ul>
                     </div>
                     
-                    <div>
-                        <h4 style="color: var(--text-dark); margin-bottom: 10px;">
-                            <i class="fas fa-times-circle" style="color: #e74c3c;"></i> DON'T:
+                    <div class="guideline-card">
+                        <h4 style="color: var(--calories-red);">
+                            <i class="fas fa-times-circle"></i> DON'T:
                         </h4>
-                        <ul style="list-style: none; padding-left: 0;">
-                            <li style="margin-bottom: 8px;">✗ Create admin accounts for regular users</li>
-                            <li style="margin-bottom: 8px;">✗ Use weak passwords</li>
-                            <li style="margin-bottom: 8px;">✗ Share admin credentials</li>
-                            <li style="margin-bottom: 8px;">✗ Create unnecessary admin accounts</li>
+                        <ul>
+                            <li><i class="fas fa-times" style="color: var(--calories-red);"></i> Create admin accounts for regular users</li>
+                            <li><i class="fas fa-times" style="color: var(--calories-red);"></i> Use weak passwords</li>
+                            <li><i class="fas fa-times" style="color: var(--calories-red);"></i> Share admin credentials</li>
+                            <li><i class="fas fa-times" style="color: var(--calories-red);"></i> Create unnecessary admin accounts</li>
                         </ul>
                     </div>
                     
-                    <div>
-                        <h4 style="color: var(--text-dark); margin-bottom: 10px;">
+                    <div class="guideline-card">
+                        <h4 style="color: var(--protein-blue);">
                             <i class="fas fa-history"></i> Recent Activity:
                         </h4>
                         <?php
@@ -665,15 +779,17 @@ $admins_result = mysqli_query($conn, $admins_query);
                         $audit_result = mysqli_query($conn, $audit_query);
                         if ($audit_result && mysqli_num_rows($audit_result) > 0):
                         ?>
-                            <ul style="list-style: none; padding-left: 0;">
+                            <div style="max-height: 150px; overflow-y: auto;">
                                 <?php while ($audit = mysqli_fetch_assoc($audit_result)): ?>
-                                    <li style="font-size: 12px; margin-bottom: 5px; color: var(--text-light);">
-                                        <i class="fas fa-circle" style="font-size: 6px; vertical-align: middle;"></i>
-                                        <?php echo date('M d, H:i', strtotime($audit['created_at'])); ?>
-                                        - <?php echo htmlspecialchars($audit['activity_details']); ?>
-                                    </li>
+                                    <div class="activity-item">
+                                        <span class="activity-dot"></span>
+                                        <span>
+                                            <?php echo date('M d, H:i', strtotime($audit['created_at'])); ?>
+                                            - <?php echo htmlspecialchars($audit['activity_details']); ?>
+                                        </span>
+                                    </div>
                                 <?php endwhile; ?>
-                            </ul>
+                            </div>
                         <?php else: ?>
                             <p style="color: var(--text-light); font-size: 13px;">No recent admin creation activity</p>
                         <?php endif; ?>
@@ -734,7 +850,6 @@ $admins_result = mysqli_query($conn, $admins_query);
             
             strengthText.className = 'strength-indicator';
             strengthText.innerHTML = `Password Strength: <span style="color: ${colors[strength]};">${strengths[strength]}</span>`;
-            strengthText.style.color = colors[strength];
             
             this.parentElement.appendChild(strengthText);
         });

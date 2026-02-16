@@ -207,22 +207,26 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
     <title>Admin Dashboard - Meal Plan System</title>
     <style>
         :root {
-            --primary-green: #27ae60;
-            --secondary-green: #2ecc71;
-            --accent-orange: #e67e22;
-            --accent-red: #e74c3c;
-            --accent-blue: #3498db;
-            --accent-purple: #9b59b6;
-            --dark-green: #2e8b57;
-            --light-green: #d5f4e6;
-            --light-bg: #f9fdf7;
-            --card-bg: #ffffff;
+            /* Nutrition-based color palette */
+            --calories-red: #e74c3c;
+            --calories-light: #f1948a;
+            --protein-blue: #3498db;
+            --protein-light: #85c1e9;
+            --carbs-yellow: #f39c12;
+            --carbs-light: #f8c471;
+            --fats-purple: #9b59b6;
+            --fats-light: #d7bde2;
+            --vitamins-green: #27ae60;
+            --vitamins-light: #a9dfbf;
+            --minerals-teal: #1abc9c;
+            --minerals-light: #76d7c4;
+            
             --text-dark: #2c3e50;
             --text-light: #7f8c8d;
-            --border-color: #e1f5e1;
-            --warning-yellow: #f39c12;
-            --success-blue: #3498db;
-            --admin-purple: #8e44ad;
+            --border-color: #e5e8e8;
+            --light-bg: #f8f9f9;
+            --card-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
         }
         
         * {
@@ -243,15 +247,16 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             min-height: 100vh;
         }
         
+        /* Sidebar with nutrition gradient */
         .sidebar {
             width: 280px;
-            background: linear-gradient(180deg, #2c3e50, #34495e);
+            background: linear-gradient(180deg, var(--text-dark), #1a2632);
             color: white;
             padding: 25px 20px;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            box-shadow: 2px 0 10px var(--shadow);
         }
         
         .logo {
@@ -265,7 +270,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, var(--admin-purple), #9b59b6);
+            background: linear-gradient(135deg, var(--vitamins-green), var(--minerals-teal));
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -297,7 +302,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         .admin-avatar {
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, var(--admin-purple), #8e44ad);
+            background: linear-gradient(135deg, var(--vitamins-green), var(--minerals-teal));
             border-radius: 50%;
             margin: 0 auto 15px;
             display: flex;
@@ -335,7 +340,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .nav-menu a.active {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
         }
         
@@ -347,7 +352,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .admin-badge {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
             padding: 3px 10px;
             border-radius: 15px;
@@ -372,7 +377,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .welcome-message h1 {
-            color: var(--admin-purple);
+            color: var(--text-dark);
             font-size: 28px;
             margin-bottom: 5px;
         }
@@ -397,43 +402,43 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .btn-primary {
-            background: var(--admin-purple);
+            background: var(--vitamins-green);
             color: white;
         }
         
         .btn-primary:hover {
-            background: #7d3c98;
+            background: #1e8449;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
         }
         
         .btn-outline {
             background: white;
-            color: var(--admin-purple);
-            border: 2px solid var(--admin-purple);
+            color: var(--vitamins-green);
+            border: 2px solid var(--vitamins-green);
         }
         
         .btn-outline:hover {
-            background: #f8f0ff;
+            background: var(--vitamins-light);
         }
         
         .btn-success {
-            background: var(--primary-green);
+            background: var(--minerals-teal);
             color: white;
         }
         
         .btn-warning {
-            background: var(--warning-yellow);
+            background: var(--carbs-yellow);
             color: white;
         }
         
         .btn-danger {
-            background: var(--accent-red);
+            background: var(--calories-red);
             color: white;
         }
         
         .btn-info {
-            background: var(--accent-blue);
+            background: var(--protein-blue);
             color: white;
         }
         
@@ -446,7 +451,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             background: white;
             border-radius: 15px;
             padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 20px var(--shadow);
             border: 1px solid var(--border-color);
             margin-bottom: 30px;
         }
@@ -461,11 +466,15 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .section-header h2 {
-            color: var(--admin-purple);
+            color: var(--text-dark);
             font-size: 22px;
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        
+        .section-header h2 i {
+            color: var(--vitamins-green);
         }
         
         .message {
@@ -478,22 +487,22 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         .message.success {
             background: #d4edda;
             color: #155724;
-            border-left-color: #28a745;
+            border-left-color: var(--vitamins-green);
         }
         
         .message.error {
             background: #f8d7da;
             color: #721c24;
-            border-left-color: #dc3545;
+            border-left-color: var(--calories-red);
         }
         
         .message.info {
             background: #d1ecf1;
             color: #0c5460;
-            border-left-color: #17a2b8;
+            border-left-color: var(--protein-blue);
         }
         
-        /* Stats Cards */
+        /* Stats Cards with nutrition colors */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -521,14 +530,14 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             height: 5px;
         }
         
-        .stat-card.total-users::before { background: linear-gradient(90deg, var(--admin-purple), #9b59b6); }
-        .stat-card.total-recipes::before { background: linear-gradient(90deg, var(--primary-green), var(--secondary-green)); }
-        .stat-card.total-plans::before { background: linear-gradient(90deg, var(--accent-blue), #2980b9); }
-        .stat-card.total-activity::before { background: linear-gradient(90deg, var(--accent-orange), #e67e22); }
+        .stat-card.total-users::before { background: linear-gradient(90deg, var(--vitamins-green), var(--minerals-teal)); }
+        .stat-card.total-recipes::before { background: linear-gradient(90deg, var(--protein-blue), var(--protein-light)); }
+        .stat-card.total-plans::before { background: linear-gradient(90deg, var(--carbs-yellow), var(--carbs-light)); }
+        .stat-card.total-activity::before { background: linear-gradient(90deg, var(--fats-purple), var(--fats-light)); }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px var(--shadow);
         }
         
         .stat-icon {
@@ -543,13 +552,13 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             font-size: 24px;
         }
         
-        .stat-icon.users { background: linear-gradient(135deg, var(--admin-purple), #9b59b6); }
-        .stat-icon.recipes { background: linear-gradient(135deg, var(--primary-green), var(--secondary-green)); }
-        .stat-icon.plans { background: linear-gradient(135deg, var(--accent-blue), #2980b9); }
-        .stat-icon.activity { background: linear-gradient(135deg, var(--accent-orange), #e67e22); }
-        .stat-icon.new-users { background: linear-gradient(135deg, #27ae60, #2ecc71); }
-        .stat-icon.active { background: linear-gradient(135deg, #e67e22, #f39c12); }
-        .stat-icon.avg { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .stat-icon.users { background: linear-gradient(135deg, var(--vitamins-green), var(--minerals-teal)); }
+        .stat-icon.recipes { background: linear-gradient(135deg, var(--protein-blue), var(--protein-light)); }
+        .stat-icon.plans { background: linear-gradient(135deg, var(--carbs-yellow), var(--carbs-light)); }
+        .stat-icon.activity { background: linear-gradient(135deg, var(--fats-purple), var(--fats-light)); }
+        .stat-icon.new-users { background: linear-gradient(135deg, var(--vitamins-green), var(--vitamins-light)); }
+        .stat-icon.active { background: linear-gradient(135deg, var(--carbs-yellow), var(--carbs-light)); }
+        .stat-icon.avg { background: linear-gradient(135deg, var(--minerals-teal), var(--minerals-light)); }
         
         .stat-value {
             font-size: 32px;
@@ -586,7 +595,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             border-radius: 15px;
             padding: 25px;
             border: 2px solid var(--border-color);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 15px var(--shadow);
         }
         
         .chart-header {
@@ -601,6 +610,11 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             font-size: 18px;
         }
         
+        .chart-header h3 i {
+            color: var(--vitamins-green);
+            margin-right: 8px;
+        }
+        
         /* Tables */
         .admin-table {
             width: 100%;
@@ -610,7 +624,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         
         .admin-table th {
             background: var(--light-bg);
-            color: var(--admin-purple);
+            color: var(--text-dark);
             font-weight: 600;
             padding: 15px;
             text-align: left;
@@ -663,8 +677,8 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         
         .form-control:focus {
             outline: none;
-            border-color: var(--admin-purple);
-            box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+            border-color: var(--vitamins-green);
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
         }
         
         .form-full {
@@ -703,7 +717,12 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         }
         
         .modal-header h3 {
-            color: var(--admin-purple);
+            color: var(--text-dark);
+        }
+        
+        .modal-header h3 i {
+            color: var(--vitamins-green);
+            margin-right: 8px;
         }
         
         .close-modal {
@@ -735,7 +754,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--admin-purple);
+            color: var(--vitamins-green);
             margin-right: 15px;
             flex-shrink: 0;
         }
@@ -756,7 +775,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             color: var(--text-light);
         }
         
-        /* Badges */
+        /* Badges with nutrition colors */
         .badge {
             padding: 4px 10px;
             border-radius: 15px;
@@ -767,9 +786,9 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         .badge-success { background: #d4edda; color: #155724; }
         .badge-warning { background: #fff3cd; color: #856404; }
         .badge-info { background: #d1ecf1; color: #0c5460; }
-        .badge-primary { background: #d1c4e9; color: #4527a0; }
-        .badge-admin { background: var(--admin-purple); color: white; }
-        .badge-user { background: #7f8c8d; color: white; }
+        .badge-primary { background: #d4e6f1; color: #1a5276; }
+        .badge-admin { background: var(--vitamins-green); color: white; }
+        .badge-user { background: var(--text-light); color: white; }
         
         /* Search Bar */
         .search-bar {
@@ -789,8 +808,8 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         
         .search-bar input:focus {
             outline: none;
-            border-color: var(--admin-purple);
-            box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+            border-color: var(--vitamins-green);
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
         }
         
         .search-bar i {
@@ -821,7 +840,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--admin-purple), #9b59b6);
+            background: linear-gradient(90deg, var(--vitamins-green), var(--minerals-teal));
             border-radius: 4px;
             transition: width 0.5s ease;
         }
@@ -906,7 +925,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">
-                    <i class="fas fa-shield-alt"></i>
+                    <i class="fas fa-leaf"></i>
                 </div>
                 <div class="logo-text">
                     <h2>NutriPlan KE</h2>
@@ -916,15 +935,15 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             
             <div class="admin-welcome">
                 <div class="admin-avatar">
-                    <i class="fas fa-user-shield"></i>
+                    <i class="fas fa-user-md"></i>
                 </div>
                 <h3>Welcome, <?php echo htmlspecialchars(explode(' ', $user_name)[0]); ?>!</h3>
-                <p>System Administrator</p>
+                <p>Nutrition Administrator</p>
                 <span class="admin-badge">ADMIN</span>
             </div>
             
             <ul class="nav-menu">
-                <li><a href="#dashboard" onclick="showSection('dashboard')" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#dashboard" onclick="showSection('dashboard')" class="active"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
                 <li><a href="#recipes" onclick="showSection('recipes')"><i class="fas fa-utensils"></i> Manage Recipes</a></li>
                 <li><a href="#nutrition" onclick="showSection('nutrition')"><i class="fas fa-chart-line"></i> Nutritional Reports</a></li>
                 <li><a href="#users" onclick="showSection('users')"><i class="fas fa-users"></i> User Management</a></li>
@@ -940,7 +959,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             <!-- Top Header -->
             <div class="top-header">
                 <div class="welcome-message">
-                    <h1>Admin Dashboard</h1>
+                    <h1><i class="fas fa-leaf" style="color: var(--vitamins-green);"></i> Nutrition Admin Dashboard</h1>
                     <p>Manage recipes, view reports, and monitor system activity</p>
                 </div>
                 <div class="header-actions">
@@ -978,13 +997,13 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             <!-- Dashboard Overview Section -->
             <div id="dashboard" class="content-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-tachometer-alt"></i> System Overview</h2>
+                    <h2><i class="fas fa-chart-pie"></i> System Overview</h2>
                     <div class="header-actions">
                         <span class="badge badge-info">Last updated: <?php echo date('F j, Y'); ?></span>
                     </div>
                 </div>
                 
-                <!-- Stats Cards -->
+                <!-- Stats Cards with nutrition colors -->
                 <div class="stats-grid">
                     <div class="stat-card total-users">
                         <div class="stat-icon users">
@@ -1035,7 +1054,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 <div class="charts-grid">
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>User Growth (Last 30 Days)</h3>
+                            <h3><i class="fas fa-chart-line"></i> User Growth (Last 30 Days)</h3>
                             <span class="badge badge-success">+<?php echo count($user_growth_data); ?> days</span>
                         </div>
                         <canvas id="userGrowthChart"></canvas>
@@ -1043,7 +1062,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                     
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>Recipe Categories</h3>
+                            <h3><i class="fas fa-chart-pie"></i> Recipe Categories</h3>
                             <span class="badge badge-primary"><?php echo count($recipe_categories_data); ?> categories</span>
                         </div>
                         <canvas id="recipeCategoriesChart"></canvas>
@@ -1099,22 +1118,22 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                                     </td>
                                     <td>
                                         <?php if ($recipe['calories']): ?>
-                                            <strong><?php echo $recipe['calories']; ?></strong> cal
+                                            <strong style="color: var(--calories-red);"><?php echo $recipe['calories']; ?></strong> cal
                                         <?php else: ?>
                                             <span style="color: var(--text-light);">—</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($recipe['protein'] || $recipe['carbs'] || $recipe['fats']): ?>
-                                            P: <?php echo $recipe['protein'] ?? 0; ?>g<br>
-                                            C: <?php echo $recipe['carbs'] ?? 0; ?>g<br>
-                                            F: <?php echo $recipe['fats'] ?? 0; ?>g
+                                            <span style="color: var(--protein-blue);">P: <?php echo $recipe['protein'] ?? 0; ?>g</span><br>
+                                            <span style="color: var(--carbs-yellow);">C: <?php echo $recipe['carbs'] ?? 0; ?>g</span><br>
+                                            <span style="color: var(--fats-purple);">F: <?php echo $recipe['fats'] ?? 0; ?>g</span>
                                         <?php else: ?>
                                             <span style="color: var(--text-light);">No data</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <strong style="color: var(--primary-green);">
+                                        <strong style="color: var(--minerals-teal);">
                                             KES <?php echo number_format($recipe['estimated_cost'], 0); ?>
                                         </strong>
                                     </td>
@@ -1154,7 +1173,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 <div class="charts-grid">
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>Average Nutritional Values</h3>
+                            <h3><i class="fas fa-chart-bar"></i> Average Nutritional Values</h3>
                             <span class="badge badge-info">All Recipes</span>
                         </div>
                         <canvas id="nutritionChart"></canvas>
@@ -1162,7 +1181,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                     
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>Cost vs Calories</h3>
+                            <h3><i class="fas fa-chart-scatter"></i> Cost vs Calories</h3>
                             <span class="badge badge-warning">Cost per 100 calories</span>
                         </div>
                         <canvas id="costCaloriesChart"></canvas>
@@ -1171,31 +1190,33 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 
                 <!-- Nutritional Summary -->
                 <div style="margin-top: 30px;">
-                    <h3 style="color: var(--admin-purple); margin-bottom: 20px;">Nutritional Summary</h3>
+                    <h3 style="color: var(--text-dark); margin-bottom: 20px;">
+                        <i class="fas fa-chart-pie" style="color: var(--vitamins-green);"></i> Nutritional Summary
+                    </h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
                         <div style="background: var(--light-bg); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--calories-red);">
                                 <?php echo number_format($avg_calories, 0); ?>
                             </div>
                             <div style="color: var(--text-light); font-size: 14px;">Avg Calories</div>
                         </div>
                         
                         <div style="background: var(--light-bg); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: var(--accent-blue);">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--protein-blue);">
                                 <?php echo number_format($avg_protein, 1); ?>g
                             </div>
                             <div style="color: var(--text-light); font-size: 14px;">Avg Protein</div>
                         </div>
                         
                         <div style="background: var(--light-bg); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: var(--accent-orange);">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--carbs-yellow);">
                                 KES <?php echo number_format($avg_cost, 0); ?>
                             </div>
                             <div style="color: var(--text-light); font-size: 14px;">Avg Cost</div>
                         </div>
                         
                         <div style="background: var(--light-bg); padding: 20px; border-radius: 10px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: var(--admin-purple);">
+                            <div style="font-size: 24px; font-weight: bold; color: var(--fats-purple);">
                                 <?php echo $recipe_count_complete; ?>
                             </div>
                             <div style="color: var(--text-light); font-size: 14px;">Complete Nutrition Data</div>
@@ -1286,156 +1307,156 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 </div>
                 
                 <!-- Users Table -->
-                <!-- Users Table -->
-<div style="overflow-x: auto;">
-    <table class="admin-table" id="usersTable">
-        <thead>
-            <tr>
-                <th width="5%">ID</th>
-                <th width="15%">Name</th>
-                <th width="15%">Email</th>
-                <th width="10%">User Type</th>
-                <th width="8%">Role</th>
-                <th width="10%">Joined</th>
-                <th width="5%">Plans</th>
-                <th width="8%">Budget</th>
-                <th width="8%">Status</th>
-                <th width="16%">Actions</th> <!-- NEW COLUMN -->
-            </tr>
-        </thead>
-        <tbody>
-            <?php 
-            mysqli_data_seek($users_result, 0);
-            $user_count = 0;
-            while ($user = mysqli_fetch_assoc($users_result)): 
-                // Apply filter
-                if ($user_filter == 'admin' && $user['is_admin'] != 1) continue;
-                if ($user_filter == 'regular' && $user['is_admin'] == 1) continue;
-                if ($user_filter == 'nutritionist' && $user['user_type'] != 'Nutritionist') continue;
-                
-                $user_count++;
-                $status_color = '#27ae60';
-                $status_text = 'Active';
-                
-                // Check if user has been active in last 7 days
-                $active_check = mysqli_query($conn, "SELECT activity_id FROM user_activity WHERE user_id = {$user['user_id']} AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) LIMIT 1");
-                if (mysqli_num_rows($active_check) == 0) {
-                    $status_color = '#95a5a6';
-                    $status_text = 'Inactive';
-                }
-            ?>
-                <tr>
-                    <td>#<?php echo $user['user_id']; ?></td>
-                    <td>
-                        <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>
-                        <?php if ($user['user_id'] == $_SESSION['user_id']): ?>
-                            <span class="badge badge-primary" style="margin-left: 5px;">You</span>
-                        <?php endif; ?>
-                    </td>
-                    <td><?php echo htmlspecialchars($user['email']); ?></td>
-                    <td>
-                        <?php 
-                        $type_class = 'badge-info';
-                        if ($user['user_type'] == 'Nutritionist') $type_class = 'badge-success';
-                        if ($user['user_type'] == 'Family') $type_class = 'badge-warning';
-                        if ($user['user_type'] == 'Organization') $type_class = 'badge-primary';
-                        ?>
-                        <span class="badge <?php echo $type_class; ?>">
-                            <?php echo htmlspecialchars($user['user_type']); ?>
-                        </span>
-                    </td>
-                    <td>
-                        <?php if ($user['is_admin'] == 1): ?>
-                            <span class="badge badge-admin">
-                                <i class="fas fa-shield-alt"></i> Admin
-                            </span>
-                        <?php else: ?>
-                            <span class="badge badge-user">
-                                <i class="fas fa-user"></i> User
-                            </span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php echo date('M d, Y', strtotime($user['date_registered'])); ?>
-                        <div style="font-size: 11px; color: var(--text-light);">
+                <div style="overflow-x: auto;">
+                    <table class="admin-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th width="5%">ID</th>
+                                <th width="15%">Name</th>
+                                <th width="15%">Email</th>
+                                <th width="10%">User Type</th>
+                                <th width="8%">Role</th>
+                                <th width="10%">Joined</th>
+                                <th width="5%">Plans</th>
+                                <th width="8%">Budget</th>
+                                <th width="8%">Status</th>
+                                <th width="16%">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                             <?php 
-                            $days_ago = floor((time() - strtotime($user['date_registered'])) / (60 * 60 * 24));
-                            echo $days_ago . ' days ago';
+                            mysqli_data_seek($users_result, 0);
+                            $user_count = 0;
+                            while ($user = mysqli_fetch_assoc($users_result)): 
+                                // Apply filter
+                                if ($user_filter == 'admin' && $user['is_admin'] != 1) continue;
+                                if ($user_filter == 'regular' && $user['is_admin'] == 1) continue;
+                                if ($user_filter == 'nutritionist' && $user['user_type'] != 'Nutritionist') continue;
+                                
+                                $user_count++;
+                                $status_color = '#27ae60';
+                                $status_text = 'Active';
+                                
+                                // Check if user has been active in last 7 days
+                                $active_check = mysqli_query($conn, "SELECT activity_id FROM user_activity WHERE user_id = {$user['user_id']} AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) LIMIT 1");
+                                if (mysqli_num_rows($active_check) == 0) {
+                                    $status_color = '#95a5a6';
+                                    $status_text = 'Inactive';
+                                }
                             ?>
-                        </div>
-                    </td>
-                    <td style="text-align: center;">
-                        <span style="font-weight: bold; color: var(--primary-green);">
-                            <?php echo $user['total_plans']; ?>
-                        </span>
-                    </td>
-                    <td style="text-align: center;">
-                        <?php if ($user['budget_amount'] > 0): ?>
-                            <span style="font-weight: bold; color: var(--accent-orange);">
-                                KES <?php echo number_format($user['budget_amount'], 0); ?>
-                            </span>
-                        <?php else: ?>
-                            <span style="color: var(--text-light);">—</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <?php echo $status_color; ?>;"></span>
-                            <span style="font-size: 13px;"><?php echo $status_text; ?></span>
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">
-                            Activities: <?php echo $user['total_activities']; ?>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="table-actions">
-                            <!-- View User Details Button -->
-                            <button class="btn btn-sm btn-info" onclick="viewUserDetails(<?php echo $user['user_id']; ?>)">
-                                <i class="fas fa-eye"></i> View
-                            </button>
+                                <tr>
+                                    <td>#<?php echo $user['user_id']; ?></td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>
+                                        <?php if ($user['user_id'] == $_SESSION['user_id']): ?>
+                                            <span class="badge badge-primary" style="margin-left: 5px;">You</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo htmlspecialchars($user['email']); ?></td>
+                                    <td>
+                                        <?php 
+                                        $type_class = 'badge-info';
+                                        if ($user['user_type'] == 'Nutritionist') $type_class = 'badge-success';
+                                        if ($user['user_type'] == 'Family') $type_class = 'badge-warning';
+                                        if ($user['user_type'] == 'Organization') $type_class = 'badge-primary';
+                                        ?>
+                                        <span class="badge <?php echo $type_class; ?>">
+                                            <?php echo htmlspecialchars($user['user_type']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($user['is_admin'] == 1): ?>
+                                            <span class="badge badge-admin">
+                                                <i class="fas fa-shield-alt"></i> Admin
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-user">
+                                                <i class="fas fa-user"></i> User
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php echo date('M d, Y', strtotime($user['date_registered'])); ?>
+                                        <div style="font-size: 11px; color: var(--text-light);">
+                                            <?php 
+                                            $days_ago = floor((time() - strtotime($user['date_registered'])) / (60 * 60 * 24));
+                                            echo $days_ago . ' days ago';
+                                            ?>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <span style="font-weight: bold; color: var(--vitamins-green);">
+                                            <?php echo $user['total_plans']; ?>
+                                        </span>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <?php if ($user['budget_amount'] > 0): ?>
+                                            <span style="font-weight: bold; color: var(--minerals-teal);">
+                                                KES <?php echo number_format($user['budget_amount'], 0); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span style="color: var(--text-light);">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <?php echo $status_color; ?>;"></span>
+                                            <span style="font-size: 13px;"><?php echo $status_text; ?></span>
+                                        </div>
+                                        <div style="font-size: 11px; color: var(--text-light); margin-top: 3px;">
+                                            Activities: <?php echo $user['total_activities']; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <!-- View User Details Button -->
+                                            <button class="btn btn-sm btn-info" onclick="viewUserDetails(<?php echo $user['user_id']; ?>)">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            
+                                            <!-- Make Admin Button (only show for non-admins) -->
+                                            <?php if ($user['is_admin'] == 0): ?>
+                                                <button class="btn btn-sm btn-warning" onclick="makeAdmin(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
+                                                    <i class="fas fa-user-shield"></i> Make Admin
+                                                </button>
+                                            <?php endif; ?>
+                                            
+                                            <!-- Remove Admin Button (only show for admins, not yourself) -->
+                                            <?php if ($user['is_admin'] == 1 && $user['user_id'] != $_SESSION['user_id']): ?>
+                                                <button class="btn btn-sm btn-outline" onclick="removeAdmin(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
+                                                    <i class="fas fa-user"></i> Remove Admin
+                                                </button>
+                                            <?php endif; ?>
+                                            
+                                            <!-- Delete User Button (don't show for yourself) -->
+                                            <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
+                                                <button class="btn btn-sm btn-danger" onclick="deleteUser(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
                             
-                            <!-- Make Admin Button (only show for non-admins) -->
-                            <?php if ($user['is_admin'] == 0): ?>
-                                <button class="btn btn-sm btn-warning" onclick="makeAdmin(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
-                                    <i class="fas fa-user-shield"></i> Make Admin
-                                </button>
+                            <?php if ($user_count == 0): ?>
+                                <tr>
+                                    <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-light);">
+                                        <i class="fas fa-users" style="font-size: 40px; margin-bottom: 15px; display: block;"></i>
+                                        No users found matching the selected filter.
+                                    </td>
+                                </tr>
                             <?php endif; ?>
-                            
-                            <!-- Remove Admin Button (only show for admins, not yourself) -->
-                            <?php if ($user['is_admin'] == 1 && $user['user_id'] != $_SESSION['user_id']): ?>
-                                <button class="btn btn-sm btn-outline" onclick="removeAdmin(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
-                                    <i class="fas fa-user"></i> Remove Admin
-                                </button>
-                            <?php endif; ?>
-                            
-                            <!-- Delete User Button (don't show for yourself) -->
-                            <?php if ($user['user_id'] != $_SESSION['user_id']): ?>
-                                <button class="btn btn-sm btn-danger" onclick="deleteUser(<?php echo $user['user_id']; ?>, '<?php echo htmlspecialchars($user['full_name']); ?>')">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
-            <?php endwhile; ?>
-            
-            <?php if ($user_count == 0): ?>
-                <tr>
-                    <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-light);">
-                        <i class="fas fa-users" style="font-size: 40px; margin-bottom: 15px; display: block;"></i>
-                        No users found matching the selected filter.
-                    </td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
+                        </tbody>
+                    </table>
+                </div>
+                
                 <!-- User Analytics -->
                 <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                     <!-- User Type Distribution -->
                     <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
-                        <h4 style="color: var(--admin-purple); margin-bottom: 15px;">
-                            <i class="fas fa-chart-pie"></i> User Type Distribution
+                        <h4 style="color: var(--text-dark); margin-bottom: 15px;">
+                            <i class="fas fa-chart-pie" style="color: var(--vitamins-green);"></i> User Type Distribution
                         </h4>
                         <?php 
                         $total = $total_users;
@@ -1460,8 +1481,8 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                     
                     <!-- Recent Registrations -->
                     <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
-                        <h4 style="color: var(--admin-purple); margin-bottom: 15px;">
-                            <i class="fas fa-user-plus"></i> Recent Registrations
+                        <h4 style="color: var(--text-dark); margin-bottom: 15px;">
+                            <i class="fas fa-user-plus" style="color: var(--vitamins-green);"></i> Recent Registrations
                         </h4>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <?php 
@@ -1483,8 +1504,8 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                     
                     <!-- Top Users by Meal Plans -->
                     <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
-                        <h4 style="color: var(--admin-purple); margin-bottom: 15px;">
-                            <i class="fas fa-trophy"></i> Top Users (Meal Plans)
+                        <h4 style="color: var(--text-dark); margin-bottom: 15px;">
+                            <i class="fas fa-trophy" style="color: var(--vitamins-green);"></i> Top Users (Meal Plans)
                         </h4>
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <?php 
@@ -1559,7 +1580,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             <div id="recipeModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 id="modalTitle">Add New Recipe</h3>
+                        <h3><i class="fas fa-utensils"></i> Add New Recipe</h3>
                         <button class="close-modal" onclick="closeModal()">&times;</button>
                     </div>
                     <form id="recipeForm" method="POST" action="">
@@ -1609,22 +1630,22 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                             
                             <div class="form-group">
                                 <label for="calories">Calories</label>
-                                <input type="number" id="calories" name="calories" class="form-control" min="0">
+                                <input type="number" id="calories" name="calories" class="form-control" min="0" placeholder="e.g., 500">
                             </div>
                             
                             <div class="form-group">
                                 <label for="protein">Protein (g)</label>
-                                <input type="number" id="protein" name="protein" class="form-control" min="0" step="0.1">
+                                <input type="number" id="protein" name="protein" class="form-control" min="0" step="0.1" placeholder="e.g., 25">
                             </div>
                             
                             <div class="form-group">
                                 <label for="carbs">Carbs (g)</label>
-                                <input type="number" id="carbs" name="carbs" class="form-control" min="0" step="0.1">
+                                <input type="number" id="carbs" name="carbs" class="form-control" min="0" step="0.1" placeholder="e.g., 50">
                             </div>
                             
                             <div class="form-group">
                                 <label for="fats">Fats (g)</label>
-                                <input type="number" id="fats" name="fats" class="form-control" min="0" step="0.1">
+                                <input type="number" id="fats" name="fats" class="form-control" min="0" step="0.1" placeholder="e.g., 15">
                             </div>
                         </div>
                         
@@ -1751,8 +1772,8 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                         datasets: [{
                             label: 'New Users',
                             data: <?php echo json_encode(array_column($user_growth_data, 'count')); ?>,
-                            borderColor: '#8e44ad',
-                            backgroundColor: 'rgba(142, 68, 173, 0.1)',
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
                             tension: 0.4,
                             fill: true
                         }]
@@ -1803,7 +1824,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                         datasets: [{
                             label: 'Average grams per recipe',
                             data: [<?php echo $avg_protein ?: 0; ?>, 65, <?php echo $avg_protein ? $avg_protein * 0.8 : 52; ?>],
-                            backgroundColor: ['#3498db', '#2ecc71', '#f39c12']
+                            backgroundColor: ['#3498db', '#f39c12', '#9b59b6']
                         }]
                     },
                     options: {
@@ -1826,7 +1847,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                                 {x: 320, y: 80}, {x: 580, y: 180}, {x: 750, y: 450},
                                 {x: 180, y: 60}
                             ],
-                            backgroundColor: '#8e44ad'
+                            backgroundColor: '#27ae60'
                         }]
                     },
                     options: {
@@ -1848,34 +1869,33 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             }
         }
        
-    // User Management Functions
-    function viewUserDetails(userId) {
-        window.location.href = `user-details.php?id=${userId}`;
-    }
-    
-    function makeAdmin(userId, userName) {
-        if (confirm(`Are you sure you want to make "${userName}" an administrator?\n\nThis will give them full access to the admin panel.`)) {
-            window.location.href = `admin-create.php?promote=${userId}`;
+        // User Management Functions
+        function viewUserDetails(userId) {
+            window.location.href = `user-details.php?id=${userId}`;
         }
-    }
-    
-    function removeAdmin(userId, userName) {
-        if (confirm(`Are you sure you want to remove "${userName}" from administrators?\n\nThey will lose access to the admin panel.`)) {
-            window.location.href = `admin-remove.php?id=${userId}`;
+        
+        function makeAdmin(userId, userName) {
+            if (confirm(`Are you sure you want to make "${userName}" an administrator?\n\nThis will give them full access to the admin panel.`)) {
+                window.location.href = `admin-create.php?promote=${userId}`;
+            }
         }
-    }
-    
-    function deleteUser(userId, userName) {
-        if (confirm(`⚠️ WARNING: Are you sure you want to permanently delete "${userName}"?\n\nThis will delete all of their:\n- Meal plans\n- Pantry items\n- Budgets\n- Activity history\n\nThis action CANNOT be undone!`)) {
-            if (confirm(`FINAL WARNING: This is irreversible. Type "DELETE" to confirm.`)) {
-                let confirmation = prompt('Type "DELETE" to confirm permanent deletion:');
-                if (confirmation === 'DELETE') {
-                    window.location.href = `admin-delete-user.php?id=${userId}&confirm=1`;
+        
+        function removeAdmin(userId, userName) {
+            if (confirm(`Are you sure you want to remove "${userName}" from administrators?\n\nThey will lose access to the admin panel.`)) {
+                window.location.href = `admin-remove.php?id=${userId}`;
+            }
+        }
+        
+        function deleteUser(userId, userName) {
+            if (confirm(`⚠️ WARNING: Are you sure you want to permanently delete "${userName}"?\n\nThis will delete all of their:\n- Meal plans\n- Pantry items\n- Budgets\n- Activity history\n\nThis action CANNOT be undone!`)) {
+                if (confirm(`FINAL WARNING: This is irreversible. Type "DELETE" to confirm.`)) {
+                    let confirmation = prompt('Type "DELETE" to confirm permanent deletion:');
+                    if (confirmation === 'DELETE') {
+                        window.location.href = `admin-delete-user.php?id=${userId}&confirm=1`;
+                    }
                 }
             }
         }
-    }
-
     </script>
 </body>
 </html>
