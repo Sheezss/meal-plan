@@ -34,7 +34,7 @@ if (!$nutrition_goals) {
     ];
 }
 
-// Calculate period for summary (default: last 7 days)
+// Calculate period for summary
 $period = isset($_GET['period']) ? $_GET['period'] : 'week';
 $end_date = date('Y-m-d');
 $start_date = '';
@@ -56,22 +56,38 @@ switch ($period) {
         $start_date = date('Y-m-d', strtotime('-7 days'));
 }
 
-// Get meal plans with nutrition data for the period
-$mealplans_query = "SELECT mp.*, 
-                   COALESCE(SUM(r.calories), 0) as total_calories,
-                   COALESCE(SUM(r.protein), 0) as total_protein,
-                   COALESCE(SUM(r.carbs), 0) as total_carbs,
-                   COALESCE(SUM(r.fats), 0) as total_fats,
-                   COUNT(DISTINCT m.meal_id) as total_meals
-                   FROM meal_plans mp
-                   LEFT JOIN meals m ON mp.mealplan_id = m.mealplan_id
-                   LEFT JOIN recipes r ON m.recipe_id = r.recipe_id
-                   WHERE mp.user_id = $user_id 
-                   AND DATE(mp.created_at) BETWEEN '$start_date' AND '$end_date'
-                   GROUP BY mp.mealplan_id
-                   ORDER BY mp.created_at DESC";
+// DEBUG: Check if user has any meal plans at all
+$check_plans = "SELECT COUNT(*) as total FROM meal_plans WHERE user_id = $user_id";
+$check_result = mysqli_query($conn, $check_plans);
+$check_row = mysqli_fetch_assoc($check_result);
+$total_plans_in_db = $check_row['total'];
+
+// Get meal plans with nutrition data for the period - FIXED QUERY
+$mealplans_query = "SELECT 
+                    mp.mealplan_id,
+                    mp.name,
+                    mp.start_date,
+                    mp.end_date,
+                    mp.total_cost,
+                    mp.created_at,
+                    COALESCE(SUM(r.calories), 0) as total_calories,
+                    COALESCE(SUM(r.protein), 0) as total_protein,
+                    COALESCE(SUM(r.carbs), 0) as total_carbs,
+                    COALESCE(SUM(r.fats), 0) as total_fats,
+                    COUNT(DISTINCT m.meal_id) as total_meals
+                    FROM meal_plans mp
+                    LEFT JOIN meals m ON mp.mealplan_id = m.mealplan_id
+                    LEFT JOIN recipes r ON m.recipe_id = r.recipe_id
+                    WHERE mp.user_id = $user_id 
+                    AND DATE(mp.created_at) BETWEEN '$start_date' AND '$end_date'
+                    GROUP BY mp.mealplan_id
+                    ORDER BY mp.created_at DESC";
 
 $mealplans_result = mysqli_query($conn, $mealplans_query);
+
+if (!$mealplans_result) {
+    die("Query failed: " . mysqli_error($conn));
+}
 
 // Calculate totals
 $total_mealplans = 0;
@@ -94,13 +110,13 @@ while ($plan = mysqli_fetch_assoc($mealplans_result)) {
     $total_cost += $plan['total_cost'];
 }
 
-// Calculate averages if we have data - FIXED DIVISION BY ZERO
+// Calculate averages
 $avg_calories = $total_mealplans > 0 ? $total_calories / $total_mealplans : 0;
 $avg_protein = $total_mealplans > 0 ? $total_protein / $total_mealplans : 0;
 $avg_carbs = $total_mealplans > 0 ? $total_carbs / $total_mealplans : 0;
 $avg_fats = $total_mealplans > 0 ? $total_fats / $total_mealplans : 0;
 
-// Calculate percentages of goals - FIXED DIVISION BY ZERO
+// Calculate percentages of goals
 $calories_percent = 0;
 $protein_percent = 0;
 $carbs_percent = 0;
@@ -140,7 +156,11 @@ if ($total_mealplans > 0 && $total_calories > 0) {
         $insights[] = "Monitor your fat intake. Choose healthier fats like avocados and nuts.";
     }
 } else {
-    $insights[] = "No meal plan data available for the selected period. Create a meal plan to see your nutrition summary!";
+    if ($total_plans_in_db > 0) {
+        $insights[] = "You have $total_plans_in_db meal plans, but none in the selected period. Try a different time range!";
+    } else {
+        $insights[] = "No meal plan data available. Create a meal plan to see your nutrition summary!";
+    }
 }
 
 // Handle goal update
@@ -159,7 +179,7 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
     // Auto-calculate goals if using TDEE calculator
     if (isset($_POST['calculate_tdee'])) {
         if ($weight > 0 && $height > 0 && $age > 0) {
-            // Calculate BMR (Basal Metabolic Rate)
+            // Calculate BMR
             if ($gender == 'Male') {
                 $bmr = 88.362 + (13.397 * $weight) + (4.799 * $height) - (5.677 * $age);
             } elseif ($gender == 'Female') {
@@ -284,16 +304,16 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             min-height: 100vh;
         }
         
-        /* Sidebar styles */
+        /* Sidebar - Matching dashboard.php exactly */
         .sidebar {
-            width: 250px;
-            background: linear-gradient(180deg, var(--dark-green), var(--primary-green));
-            color: white;
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-color);
             padding: 25px 20px;
             position: fixed;
             height: 100vh;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            box-shadow: 2px 0 10px rgba(46, 204, 113, 0.1);
         }
         
         .logo {
@@ -301,25 +321,53 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid var(--border-color);
         }
         
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: white;
+            background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-green);
+            color: white;
             font-size: 20px;
             margin-right: 15px;
         }
         
         .logo-text h2 {
-            color: white;
+            color: var(--dark-green);
             font-size: 22px;
+        }
+        
+        .logo-text p {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+        
+        .user-welcome {
+            background: linear-gradient(135deg, var(--light-green), #e8f8f1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
         }
         
         .nav-menu {
@@ -335,7 +383,7 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             display: flex;
             align-items: center;
             padding: 12px 15px;
-            color: rgba(255,255,255,0.9);
+            color: var(--text-dark);
             text-decoration: none;
             border-radius: 10px;
             transition: all 0.3s;
@@ -343,13 +391,13 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
         }
         
         .nav-menu a:hover {
-            background: rgba(255,255,255,0.1);
-            color: white;
+            background-color: var(--light-green);
+            color: var(--primary-green);
             transform: translateX(5px);
         }
         
         .nav-menu a.active {
-            background: rgba(255,255,255,0.2);
+            background-color: var(--primary-green);
             color: white;
         }
         
@@ -360,9 +408,28 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             font-size: 18px;
         }
         
+        .todays-plan {
+            background: white;
+            border: 2px solid var(--primary-green);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .todays-plan h4 {
+            color: var(--dark-green);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .todays-plan h4 i {
+            margin-right: 10px;
+        }
+        
         .main-content {
             flex: 1;
-            margin-left: 250px;
+            margin-left: 280px;
             padding: 30px;
         }
         
@@ -382,7 +449,7 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
         }
         
         .welcome-message p {
-            color: var(--text-light);
+            color: var(--accent-orange);
             font-size: 16px;
         }
         
@@ -408,6 +475,7 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
         .btn-primary:hover {
             background: var(--dark-green);
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
         }
         
         .btn-outline {
@@ -418,6 +486,11 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
         
         .btn-outline:hover {
             background: var(--light-green);
+        }
+        
+        .btn-lg {
+            padding: 15px 40px;
+            font-size: 16px;
         }
         
         .period-selector {
@@ -727,6 +800,17 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             background: #2980b9;
         }
         
+        /* Debug info */
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -786,7 +870,7 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
+        <!-- Sidebar - Matching dashboard.php exactly -->
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">
@@ -794,20 +878,56 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
                 </div>
                 <div class="logo-text">
                     <h2>NutriPlan KE</h2>
-                    <p>Healthy Living</p>
+                    <p>Smart • Healthy • Affordable</p>
                 </div>
+            </div>
+            
+            <div class="user-welcome">
+                <div class="user-avatar">
+                    <?php echo strtoupper(substr($user_name, 0, 1)); ?>
+                </div>
+                <h3>Welcome, <?php echo htmlspecialchars($user_name); ?>!</h3>
+                <p>Your nutrition summary is ready! 📊</p>
             </div>
             
             <ul class="nav-menu">
                 <li><a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="pantry.php"><i class="fas fa-archive"></i> My Pantry</a></li>
-                <li><a href="meal_plan.php"><i class="fas fa-calendar-alt"></i> Meal Plans</a></li>
-                <li><a href="nutrition-summary.php" class="active"><i class="fas fa-chart-pie"></i> Nutrition Summary</a></li>
+                <li><a href="meal_plan.php"><i class="fas fa-calendar-alt"></i> My Meal Plans</a></li>
+                <li><a href="pantry.php"><i class="fas fa-utensils"></i> My Pantry</a></li>
+                <li><a href="recipes.php"><i class="fas fa-book"></i> Kenyan Recipes</a></li>
                 <li><a href="shopping-list.php"><i class="fas fa-shopping-cart"></i> Shopping List</a></li>
-                <li><a href="budget.php"><i class="fas fa-wallet"></i> Budget</a></li>
-                <li><a href="profile.php"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="budget.php"><i class="fas fa-wallet"></i> Budget Tracker</a></li>
+                <li><a href="nutrition-summary.php" class="active"><i class="fas fa-chart-pie"></i> Nutrition Summary</a></li>
+                <li><a href="preferences.php"><i class="fas fa-sliders-h"></i> My Preferences</a></li>
+                <li><a href="create-plan.php"><i class="fas fa-magic"></i> Generate Plan</a></li>
+                <li><a href="profile.php"><i class="fas fa-user"></i> My Profile</a></li>
                 <li><a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
+            
+            <div class="todays-plan">
+                <h4><i class="fas fa-bullseye"></i> Your Goals</h4>
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
+                        <?php echo $nutrition_goals['daily_calories']; ?>
+                    </div>
+                    <div style="color: var(--text-light); font-size: 14px;">Daily Calories</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Protein:</span>
+                    <span style="font-weight: bold;"><?php echo $nutrition_goals['daily_protein']; ?>g</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Carbs:</span>
+                    <span style="font-weight: bold;"><?php echo $nutrition_goals['daily_carbs']; ?>g</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Fats:</span>
+                    <span style="font-weight: bold;"><?php echo $nutrition_goals['daily_fats']; ?>g</span>
+                </div>
+                <div style="margin-top: 15px; font-size: 13px; color: var(--text-light);">
+                    <i class="fas fa-info-circle"></i> Goal: <?php echo $nutrition_goals['goal_type'] ?? 'Maintenance'; ?>
+                </div>
+            </div>
         </aside>
         
         <!-- Main Content -->
@@ -841,6 +961,18 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
                     <?php echo htmlspecialchars($error_message); ?>
                 </div>
             <?php endif; ?>
+            
+            <!-- Debug Info - Remove after fixing -->
+            <div class="debug-info">
+                <strong>🔍 Debug Info:</strong><br>
+                User ID: <?php echo $user_id; ?><br>
+                Total Meal Plans in Database: <?php echo $total_plans_in_db; ?><br>
+                Meal Plans in Selected Period: <?php echo $total_mealplans; ?><br>
+                Selected Period: <?php echo $period; ?> (<?php echo $start_date; ?> to <?php echo $end_date; ?>)<br>
+                <?php if ($total_plans_in_db > 0 && $total_mealplans == 0): ?>
+                    <span style="color: #e74c3c;">⚠️ Your meal plans exist but are outside the selected date range. Try "All Time" period.</span>
+                <?php endif; ?>
+            </div>
             
             <!-- Period Selector -->
             <div class="period-selector">
@@ -969,11 +1101,23 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
                 <?php else: ?>
                     <div style="text-align: center; padding: 40px; color: var(--text-light);">
                         <i class="fas fa-chart-pie" style="font-size: 48px; margin-bottom: 20px; display: block; color: var(--border-color);"></i>
-                        <h3 style="color: var(--text-dark); margin-bottom: 10px;">No Data Available</h3>
-                        <p style="margin-bottom: 20px;">You haven't created any meal plans for this period.</p>
-                        <a href="create-plan.php" class="btn btn-primary">
-                            <i class="fas fa-magic"></i> Generate Meal Plan
-                        </a>
+                        <h3 style="color: var(--text-dark); margin-bottom: 10px;">No Data Available for this Period</h3>
+                        <p style="margin-bottom: 20px;">
+                            <?php if ($total_plans_in_db > 0): ?>
+                                You have <?php echo $total_plans_in_db; ?> meal plans, but none in the selected period.
+                                Try selecting "All Time" or a different date range.
+                            <?php else: ?>
+                                You haven't created any meal plans yet.
+                            <?php endif; ?>
+                        </p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <a href="?period=all" class="btn btn-primary">
+                                <i class="fas fa-calendar-alt"></i> View All Time
+                            </a>
+                            <a href="create-plan.php" class="btn btn-outline">
+                                <i class="fas fa-magic"></i> Generate Meal Plan
+                            </a>
+                        </div>
                     </div>
                 <?php endif; ?>
             </div>

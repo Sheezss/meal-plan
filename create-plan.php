@@ -2,6 +2,13 @@
 // create-plan.php - Personalized Pantry-Based Meal Plan Generator
 session_start();
 require_once 'config.php';
+// DEBUG: Check session
+echo "<!-- DEBUG: Session user_id = " . ($_SESSION['user_id'] ?? 'not set') . " -->";
+echo "<!-- DEBUG: Session user_name = " . ($_SESSION['full_name'] ?? 'not set') . " -->";
+
+if (!isset($_SESSION['user_id'])) {
+    die("ERROR: No user_id in session! Please login again.");
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -566,65 +573,128 @@ if (isset($_POST['generate_plan'])) {
     }
 }
 
-// Save meal plan
+// Save meal plan - DEBUG VERSION
 if (isset($_POST['save_plan']) && !empty($generated_plan)) {
-    $plan_name = "Pantry-Based Plan - " . date('d M Y');
+    // Show debug info
+    echo "<div style='background: #333; color: #fff; padding: 20px; margin: 20px; border-radius: 10px; font-family: monospace;'>";
+    echo "<h2 style='color: #ff0;'>🔍 DEBUG: Saving Meal Plan</h2>";
+    
+    echo "<p><strong>User ID from session:</strong> " . $user_id . "</p>";
+    echo "<p><strong>User Name:</strong> " . $user_name . "</p>";
+    
+    // Check if user exists in database
+    $check_user = mysqli_query($conn, "SELECT * FROM users WHERE user_id = $user_id");
+    if (mysqli_num_rows($check_user) > 0) {
+        $user_data = mysqli_fetch_assoc($check_user);
+        echo "<p style='color: #0f0;'>✅ User found: " . $user_data['email'] . "</p>";
+    } else {
+        echo "<p style='color: #f00;'>❌ User NOT found in database!</p>";
+    }
+    
+    $plan_name = "Pantry-Based Plan - " . date('d M Y H:i:s');
     $total_cost = $generated_plan['total_cost'] + $generated_plan['shopping_cost'];
     $start_date = date('Y-m-d');
     $end_date = date('Y-m-d', strtotime('+6 days'));
     
-    $sql = "INSERT INTO meal_plans (user_id, name, start_date, end_date, total_cost) 
-            VALUES ($user_id, '$plan_name', '$start_date', '$end_date', $total_cost)";
+    echo "<p><strong>Plan Name:</strong> $plan_name</p>";
+    echo "<p><strong>Total Cost:</strong> $total_cost</p>";
+    echo "<p><strong>Shopping List Items:</strong> " . count($generated_plan['shopping_list']) . "</p>";
+    
+    // Insert meal plan with created_at
+    $sql = "INSERT INTO meal_plans (user_id, name, start_date, end_date, total_cost, created_at) 
+            VALUES ($user_id, '$plan_name', '$start_date', '$end_date', $total_cost, NOW())";
+    
+    echo "<p><strong>SQL Query:</strong> " . htmlspecialchars($sql) . "</p>";
     
     if (mysqli_query($conn, $sql)) {
         $plan_id = mysqli_insert_id($conn);
+        echo "<p style='color: #0f0;'>✅ Meal plan inserted with ID: $plan_id</p>";
+        
+        // Verify the plan was inserted
+        $verify = mysqli_query($conn, "SELECT * FROM meal_plans WHERE mealplan_id = $plan_id");
+        if (mysqli_num_rows($verify) > 0) {
+            $inserted = mysqli_fetch_assoc($verify);
+            echo "<p style='color: #0f0;'>✅ Verified: Plan exists in database</p>";
+            echo "<p>Created at: " . $inserted['created_at'] . "</p>";
+        } else {
+            echo "<p style='color: #f00;'>❌ Verification failed - plan not found after insert!</p>";
+        }
+        
+        $shopping_items_saved = 0;
         
         // Save shopping list items
-        foreach ($generated_plan['shopping_list'] as $item) {
-            // Clean the item name for better matching
+        foreach ($generated_plan['shopping_list'] as $index => $item) {
             $item_name = mysqli_real_escape_string($conn, $item['item']);
+            $quantity = floatval($item['quantity']);
+            $unit = mysqli_real_escape_string($conn, $item['unit']);
             
-            // Try to find the food item with better matching
-            $food_query = "SELECT fooditem_id FROM food_items 
-                           WHERE name LIKE '%$item_name%' 
-                           OR name LIKE '%" . strtolower($item_name) . "%'
-                           OR '%$item_name%' LIKE CONCAT('%', name, '%')
-                           LIMIT 1";
+            echo "<p><strong>Item " . ($index+1) . ":</strong> $item_name - $quantity $unit</p>";
+            
+            // Try to find existing food item
+            $food_query = "SELECT fooditem_id FROM food_items WHERE LOWER(name) = LOWER('$item_name') LIMIT 1";
             $food_result = mysqli_query($conn, $food_query);
             
             if ($food_result && mysqli_num_rows($food_result) > 0) {
                 $food_row = mysqli_fetch_assoc($food_result);
                 $fooditem_id = $food_row['fooditem_id'];
+                echo "<p>✅ Found existing food item ID: $fooditem_id</p>";
             } else {
-                // If food item doesn't exist, create a new one
-                $insert_food = "INSERT INTO food_items (name, category, unit) 
-                                VALUES ('$item_name', 'Other', '{$item['unit']}')";
-                mysqli_query($conn, $insert_food);
-                $fooditem_id = mysqli_insert_id($conn);
+                // Insert new food item
+                $insert_food = "INSERT INTO food_items (name, category, unit, created_at) 
+                               VALUES ('$item_name', 'Other', '$unit', NOW())";
+                if (mysqli_query($conn, $insert_food)) {
+                    $fooditem_id = mysqli_insert_id($conn);
+                    echo "<p>✅ Created new food item ID: $fooditem_id</p>";
+                } else {
+                    $fooditem_id = 1;
+                    echo "<p style='color: #f00;'>❌ Failed to create food item, using ID 1</p>";
+                }
             }
             
             // Insert into shopping list
-            $quantity = floatval($item['quantity']);
-            $unit = mysqli_real_escape_string($conn, $item['unit']);
-            $shop_sql = "INSERT INTO shopping_lists (mealplan_id, fooditem_id, quantity_needed, unit, status) 
-                         VALUES ($plan_id, $fooditem_id, $quantity, '$unit', 'Pending')";
-            mysqli_query($conn, $shop_sql);
+            $shop_sql = "INSERT INTO shopping_lists (mealplan_id, fooditem_id, quantity_needed, unit, status, created_at) 
+                        VALUES ($plan_id, $fooditem_id, $quantity, '$unit', 'Pending', NOW())";
+            
+            if (mysqli_query($conn, $shop_sql)) {
+                $shopping_items_saved++;
+                $shop_id = mysqli_insert_id($conn);
+                echo "<p style='color: #0f0;'>✅ Shopping item saved with ID: $shop_id</p>";
+            } else {
+                echo "<p style='color: #f00;'>❌ Failed: " . mysqli_error($conn) . "</p>";
+            }
         }
         
-        $message = "Meal plan saved successfully! Shopping list created.";
-        $message_type = 'success';
+        echo "<p><strong>Total shopping items saved:</strong> $shopping_items_saved</p>";
         
-        // Track plan saving in user_activity table
-        $save_track_query = "INSERT INTO user_activity (user_id, activity_type, activity_details) 
-                             VALUES ($user_id, 'plan_saved', 'Saved meal plan: $plan_name')";
-        mysqli_query($conn, $save_track_query);
+        // Final verification - count all plans for this user
+        $count_plans = mysqli_query($conn, "SELECT COUNT(*) as total FROM meal_plans WHERE user_id = $user_id");
+        $count_row = mysqli_fetch_assoc($count_plans);
+        echo "<p><strong>Total meal plans for user $user_id now:</strong> " . $count_row['total'] . "</p>";
+        
+        // Show all plans for this user
+        $all_plans = mysqli_query($conn, "SELECT mealplan_id, name, created_at FROM meal_plans WHERE user_id = $user_id ORDER BY mealplan_id DESC");
+        echo "<p><strong>All plans for this user:</strong></p>";
+        echo "<ul>";
+        while ($plan = mysqli_fetch_assoc($all_plans)) {
+            echo "<li>ID: {$plan['mealplan_id']} - {$plan['name']} - {$plan['created_at']}</li>";
+        }
+        echo "</ul>";
+        
+        echo "<div style='margin-top: 30px; padding: 20px; background: #4CAF50; color: white; border-radius: 10px;'>";
+        echo "<h3>✅ DEBUG COMPLETE</h3>";
+        echo "<p>Check the output above to see what happened.</p>";
+        echo "<p><a href='shopping-list.php' style='color: white; font-weight: bold;'>👉 Go to Shopping List</a></p>";
+        echo "<p><a href='nutrition-summary.php' style='color: white; font-weight: bold;'>👉 Go to Nutrition Summary</a></p>";
+        echo "</div>";
+        echo "</div>";
+        exit();
         
     } else {
-        $message = "Error saving meal plan: " . mysqli_error($conn);
-        $message_type = 'error';
+        echo "<p style='color: #f00;'>❌ Error inserting meal plan: " . mysqli_error($conn) . "</p>";
+        echo "</div>";
+        exit();
     }
 }
-
 // Handle check again request
 if (isset($_POST['check_again'])) {
     header("Location: create-plan.php");
