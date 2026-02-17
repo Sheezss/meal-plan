@@ -99,12 +99,12 @@ if (isset($_POST['add_to_plan'])) {
     }
 }
 
-// Get all Kenyan recipes from database
+// Get all Kenyan recipes from database (with duplicates removed)
 $recipes_query = "SELECT * FROM recipes ORDER BY meal_type, recipe_name";
 $recipes_result = mysqli_query($conn, $recipes_query);
 
 // Get recipe categories
-$categories_query = "SELECT DISTINCT meal_type FROM recipes";
+$categories_query = "SELECT DISTINCT meal_type FROM recipes ORDER BY meal_type";
 $categories_result = mysqli_query($conn, $categories_query);
 $categories = [];
 while ($cat = mysqli_fetch_assoc($categories_result)) {
@@ -1214,95 +1214,7 @@ $plans_result = mysqli_query($conn, $plans_query);
     <script>
         // Recipe viewing function
         function viewRecipe(recipeId) {
-            // In a real implementation, you would fetch recipe details via AJAX
-            // For now, we'll redirect to a recipe detail page
             window.location.href = 'recipe-details.php?id=' + recipeId;
-            
-            // Alternative: Show modal with recipe details (if you want to keep on same page)
-            /*
-            fetch('get-recipe.php?id=' + recipeId)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('modalRecipeName').textContent = data.recipe_name;
-                    
-                    let html = `
-                        <div class="recipe-detail-image">
-                            <i class="fas fa-utensils"></i>
-                        </div>
-                        
-                        <div class="recipe-meta">
-                            <div class="meta-item">
-                                <div class="meta-value">${data.calories || '300'}</div>
-                                <div class="meta-label">Calories</div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-value">KES ${data.estimated_cost}</div>
-                                <div class="meta-label">Cost</div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-value">${data.prep_time || '30'} min</div>
-                                <div class="meta-label">Prep Time</div>
-                            </div>
-                        </div>
-                        
-                        <div class="ingredients-list">
-                            <h3>Ingredients</h3>
-                            <div class="ingredients-grid">
-                    `;
-                    
-                    data.ingredients.forEach(ing => {
-                        html += `
-                            <div class="ingredient-item">
-                                <span class="ingredient-name">${ing.ingredient_name}</span>
-                                <span class="ingredient-quantity">${ing.quantity} ${ing.unit}</span>
-                            </div>
-                        `;
-                    });
-                    
-                    html += `
-                            </div>
-                        </div>
-                        
-                        <div class="instructions">
-                            <h3>Instructions</h3>
-                            <div class="instructions-content">${data.instructions || 'No instructions available.'}</div>
-                        </div>
-                        
-                        <div class="add-to-plan-form">
-                            <h3 style="color: var(--dark-green); margin-bottom: 15px;">Add to Your Meal Plan</h3>
-                            <form method="POST" action="">
-                                <input type="hidden" name="recipe_id" value="${recipeId}">
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Meal Type</label>
-                                        <select name="meal_type" class="form-control" required>
-                                            <option value="${data.meal_type}">${data.meal_type}</option>
-                                            <option value="Breakfast">Breakfast</option>
-                                            <option value="Lunch">Lunch</option>
-                                            <option value="Dinner">Dinner</option>
-                                            <option value="Snack">Snack</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label>Date</label>
-                                        <input type="date" name="scheduled_date" class="form-control" 
-                                               min="${new Date().toISOString().split('T')[0]}" required>
-                                    </div>
-                                </div>
-                                
-                                <button type="submit" name="add_to_plan" class="btn btn-primary">
-                                    <i class="fas fa-plus-circle"></i> Add to Plan
-                                </button>
-                            </form>
-                        </div>
-                    `;
-                    
-                    document.getElementById('modalRecipeContent').innerHTML = html;
-                    document.getElementById('recipeModal').style.display = 'flex';
-                });
-            */
         }
         
         // Add to plan modal functions
@@ -1329,8 +1241,6 @@ $plans_result = mysqli_query($conn, $plans_query);
         
         function useExistingPlan(planId) {
             if (planId) {
-                // Set the mealplan_id in the form
-                // You could add a hidden input or redirect
                 console.log('Selected plan:', planId);
             }
         }
