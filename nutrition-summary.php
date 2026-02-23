@@ -56,13 +56,7 @@ switch ($period) {
         $start_date = date('Y-m-d', strtotime('-7 days'));
 }
 
-// DEBUG: Check if user has any meal plans at all
-$check_plans = "SELECT COUNT(*) as total FROM meal_plans WHERE user_id = $user_id";
-$check_result = mysqli_query($conn, $check_plans);
-$check_row = mysqli_fetch_assoc($check_result);
-$total_plans_in_db = $check_row['total'];
-
-// Get meal plans with nutrition data for the period - FIXED QUERY
+// Get meal plans with nutrition data for the period
 $mealplans_query = "SELECT 
                     mp.mealplan_id,
                     mp.name,
@@ -156,11 +150,7 @@ if ($total_mealplans > 0 && $total_calories > 0) {
         $insights[] = "Monitor your fat intake. Choose healthier fats like avocados and nuts.";
     }
 } else {
-    if ($total_plans_in_db > 0) {
-        $insights[] = "You have $total_plans_in_db meal plans, but none in the selected period. Try a different time range!";
-    } else {
-        $insights[] = "No meal plan data available. Create a meal plan to see your nutrition summary!";
-    }
+    $insights[] = "No meal plan data available. Create a meal plan to see your nutrition summary!";
 }
 
 // Handle goal update
@@ -800,17 +790,6 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
             background: #2980b9;
         }
         
-        /* Debug info */
-        .debug-info {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #6c757d;
-        }
-        
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -962,18 +941,6 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
                 </div>
             <?php endif; ?>
             
-            <!-- Debug Info - Remove after fixing -->
-            <div class="debug-info">
-                <strong>🔍 Debug Info:</strong><br>
-                User ID: <?php echo $user_id; ?><br>
-                Total Meal Plans in Database: <?php echo $total_plans_in_db; ?><br>
-                Meal Plans in Selected Period: <?php echo $total_mealplans; ?><br>
-                Selected Period: <?php echo $period; ?> (<?php echo $start_date; ?> to <?php echo $end_date; ?>)<br>
-                <?php if ($total_plans_in_db > 0 && $total_mealplans == 0): ?>
-                    <span style="color: #e74c3c;">⚠️ Your meal plans exist but are outside the selected date range. Try "All Time" period.</span>
-                <?php endif; ?>
-            </div>
-            
             <!-- Period Selector -->
             <div class="period-selector">
                 <a href="?period=today" class="period-btn <?php echo $period == 'today' ? 'active' : ''; ?>">
@@ -1103,18 +1070,10 @@ if (isset($_POST['update_goals']) || isset($_POST['calculate_tdee'])) {
                         <i class="fas fa-chart-pie" style="font-size: 48px; margin-bottom: 20px; display: block; color: var(--border-color);"></i>
                         <h3 style="color: var(--text-dark); margin-bottom: 10px;">No Data Available for this Period</h3>
                         <p style="margin-bottom: 20px;">
-                            <?php if ($total_plans_in_db > 0): ?>
-                                You have <?php echo $total_plans_in_db; ?> meal plans, but none in the selected period.
-                                Try selecting "All Time" or a different date range.
-                            <?php else: ?>
-                                You haven't created any meal plans yet.
-                            <?php endif; ?>
+                            You haven't created any meal plans yet.
                         </p>
                         <div style="display: flex; gap: 15px; justify-content: center;">
-                            <a href="?period=all" class="btn btn-primary">
-                                <i class="fas fa-calendar-alt"></i> View All Time
-                            </a>
-                            <a href="create-plan.php" class="btn btn-outline">
+                            <a href="create-plan.php" class="btn btn-primary">
                                 <i class="fas fa-magic"></i> Generate Meal Plan
                             </a>
                         </div>

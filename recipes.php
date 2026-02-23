@@ -99,7 +99,7 @@ if (isset($_POST['add_to_plan'])) {
     }
 }
 
-// Get all Kenyan recipes from database (with duplicates removed)
+// Get all Kenyan recipes from database
 $recipes_query = "SELECT * FROM recipes ORDER BY meal_type, recipe_name";
 $recipes_result = mysqli_query($conn, $recipes_query);
 
@@ -135,6 +135,63 @@ $plans_query = "SELECT mealplan_id, name, start_date, end_date
                 AND end_date >= CURDATE()
                 ORDER BY start_date ASC";
 $plans_result = mysqli_query($conn, $plans_query);
+
+// Function to get image icon based on recipe name
+function getRecipeIcon($recipe_name) {
+    $name = strtolower($recipe_name);
+    
+    if (strpos($name, 'ugali') !== false) {
+        return 'fa-solid fa-wheat-awn';
+    } elseif (strpos($name, 'sukuma') !== false || strpos($name, 'wiki') !== false) {
+        return 'fa-solid fa-leaf';
+    } elseif (strpos($name, 'chapati') !== false) {
+        return 'fa-solid fa-bread-slice';
+    } elseif (strpos($name, 'pilau') !== false) {
+        return 'fa-solid fa-bowl-rice';
+    } elseif (strpos($name, 'nyama') !== false || strpos($name, 'beef') !== false || strpos($name, 'chicken') !== false) {
+        return 'fa-solid fa-drumstick-bite';
+    } elseif (strpos($name, 'fish') !== false || strpos($name, 'tilapia') !== false) {
+        return 'fa-solid fa-fish';
+    } elseif (strpos($name, 'egg') !== false) {
+        return 'fa-solid fa-egg';
+    } elseif (strpos($name, 'fruit') !== false || strpos($name, 'salad') !== false) {
+        return 'fa-solid fa-apple-alt';
+    } elseif (strpos($name, 'soup') !== false) {
+        return 'fa-solid fa-mug-hot';
+    } elseif (strpos($name, 'mandazi') !== false || strpos($name, 'mahamri') !== false) {
+        return 'fa-solid fa-cookie-bite';
+    } elseif (strpos($name, 'chai') !== false) {
+        return 'fa-solid fa-mug-saucer';
+    } elseif (strpos($name, 'viazi') !== false || strpos($name, 'potato') !== false) {
+        return 'fa-solid fa-potato';
+    } elseif (strpos($name, 'mukimo') !== false) {
+        return 'fa-solid fa-bowl-food';
+    } elseif (strpos($name, 'githeri') !== false) {
+        return 'fa-solid fa-seedling';
+    } elseif (strpos($name, 'matoke') !== false) {
+        return 'fa-solid fa-leaf';
+    } elseif (strpos($name, 'avocado') !== false) {
+        return 'fa-solid fa-leaf';
+    } else {
+        return 'fa-solid fa-utensils';
+    }
+}
+
+// Function to get background color based on meal type
+function getMealTypeColor($meal_type) {
+    switch($meal_type) {
+        case 'Breakfast':
+            return 'linear-gradient(135deg, #f39c12, #e67e22)';
+        case 'Lunch':
+            return 'linear-gradient(135deg, #3498db, #2980b9)';
+        case 'Dinner':
+            return 'linear-gradient(135deg, #9b59b6, #8e44ad)';
+        case 'Snack':
+            return 'linear-gradient(135deg, #e74c3c, #c0392b)';
+        default:
+            return 'linear-gradient(135deg, var(--primary-green), var(--secondary-green))';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -466,12 +523,27 @@ $plans_result = mysqli_query($conn, $plans_query);
         
         .recipe-image {
             height: 180px;
-            background: linear-gradient(135deg, var(--light-green), #e8f8f1);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary-green);
+            color: white;
             font-size: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .recipe-image i {
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
         
         .recipe-content {
@@ -598,24 +670,6 @@ $plans_result = mysqli_query($conn, $plans_query);
         .empty-state p {
             margin-bottom: 30px;
         }
-        
-        /* Recipe Icons */
-        .recipe-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: white;
-            margin: 0 auto 15px;
-        }
-        
-        .breakfast-icon { background: linear-gradient(135deg, #f39c12, #e67e22); }
-        .lunch-icon { background: linear-gradient(135deg, #3498db, #2980b9); }
-        .dinner-icon { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
-        .snack-icon { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         
         /* Modal */
         .modal {
@@ -972,7 +1026,6 @@ $plans_result = mysqli_query($conn, $plans_query);
                         }
                         
                         foreach ($recipes_by_category as $category => $category_recipes): 
-                            $icon_class = strtolower($category) . '-icon';
                             $category_icon = '';
                             switch($category) {
                                 case 'Breakfast': $category_icon = 'fas fa-sun'; break;
@@ -985,12 +1038,13 @@ $plans_result = mysqli_query($conn, $plans_query);
                             <div class="category-section">
                                 <h3><i class="<?php echo $category_icon; ?>"></i> <?php echo htmlspecialchars($category); ?> Recipes</h3>
                                 <div class="recipes-grid">
-                                    <?php foreach ($category_recipes as $recipe): ?>
+                                    <?php foreach ($category_recipes as $recipe): 
+                                        $icon = getRecipeIcon($recipe['recipe_name']);
+                                        $bgColor = getMealTypeColor($category);
+                                    ?>
                                         <div class="recipe-card" onclick="viewRecipe(<?php echo $recipe['recipe_id']; ?>)">
-                                            <div class="recipe-image">
-                                                <div class="recipe-icon <?php echo $icon_class; ?>">
-                                                    <i class="<?php echo $category_icon; ?>"></i>
-                                                </div>
+                                            <div class="recipe-image" style="background: <?php echo $bgColor; ?>;">
+                                                <i class="<?php echo $icon; ?>"></i>
                                             </div>
                                             <div class="recipe-content">
                                                 <div class="recipe-header">
@@ -1037,21 +1091,12 @@ $plans_result = mysqli_query($conn, $plans_query);
                         <!-- Show all filtered recipes in one grid -->
                         <div class="recipes-grid">
                             <?php while ($recipe = mysqli_fetch_assoc($recipes_result)): 
-                                $icon_class = strtolower($recipe['meal_type']) . '-icon';
-                                $category_icon = '';
-                                switch($recipe['meal_type']) {
-                                    case 'Breakfast': $category_icon = 'fas fa-sun'; break;
-                                    case 'Lunch': $category_icon = 'fas fa-sun'; break;
-                                    case 'Dinner': $category_icon = 'fas fa-moon'; break;
-                                    case 'Snack': $category_icon = 'fas fa-apple-alt'; break;
-                                    default: $category_icon = 'fas fa-utensils';
-                                }
+                                $icon = getRecipeIcon($recipe['recipe_name']);
+                                $bgColor = getMealTypeColor($recipe['meal_type']);
                             ?>
                                 <div class="recipe-card" onclick="window.location.href='recipe-details.php?id=<?php echo $recipe['recipe_id']; ?>'">
-                                    <div class="recipe-image">
-                                        <div class="recipe-icon <?php echo $icon_class; ?>">
-                                            <i class="<?php echo $category_icon; ?>"></i>
-                                        </div>
+                                    <div class="recipe-image" style="background: <?php echo $bgColor; ?>;">
+                                        <i class="<?php echo $icon; ?>"></i>
                                     </div>
                                     <div class="recipe-content">
                                         <div class="recipe-header">

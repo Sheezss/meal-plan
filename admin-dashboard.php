@@ -1576,11 +1576,11 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 </div>
             </div>
             
-            <!-- Add/Edit Recipe Modal -->
+            <!-- Add/Edit Recipe Modal - FIXED VERSION -->
             <div id="recipeModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3><i class="fas fa-utensils"></i> Add New Recipe</h3>
+                        <h3 id="modalTitle"><i class="fas fa-utensils"></i> Add New Recipe</h3>
                         <button class="close-modal" onclick="closeModal()">&times;</button>
                     </div>
                     <form id="recipeForm" method="POST" action="">
@@ -1703,9 +1703,9 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             initCharts();
         });
         
-        // Modal functions
+        // Modal functions - FIXED VERSION
         function showAddRecipeModal() {
-            document.getElementById('modalTitle').textContent = 'Add New Recipe';
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-utensils"></i> Add New Recipe';
             document.getElementById('recipeForm').reset();
             document.getElementById('recipe_id').value = '';
             document.getElementById('submitBtn').name = 'add_recipe';
