@@ -507,6 +507,26 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             border-left-color: var(--protein-blue);
         }
         
+        /* Loading spinner animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: var(--protein-blue);
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+        
         /* Stats Cards with nutrition colors */
         .stats-grid {
             display: grid;
@@ -1203,7 +1223,7 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 <div class="section-header">
                     <h2><i class="fas fa-chart-line"></i> Nutritional Reports</h2>
                     <div class="header-actions">
-                        <button class="btn btn-outline" onclick="exportNutritionData()">
+                        <button class="btn btn-outline btn-sm" onclick="exportNutritionData()">
                             <i class="fas fa-download"></i> Export Data
                         </button>
                     </div>
@@ -1264,13 +1284,13 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
                 </div>
             </div>
             
-            <!-- User Management Section - FIXED VERSION -->
+            <!-- User Management Section - FIXED VERSION with Working Export -->
             <div id="users" class="content-section" style="display: none;">
                 <div class="section-header">
                     <h2><i class="fas fa-users-cog"></i> User Management</h2>
                     <div class="header-actions">
                         <button class="btn btn-outline btn-sm" onclick="exportUserData()">
-                            <i class="fas fa-download"></i> Export
+                            <i class="fas fa-download"></i> Export Users
                         </button>
                     </div>
                 </div>
@@ -1778,12 +1798,47 @@ $user_filter = isset($_GET['user_filter']) ? $_GET['user_filter'] : 'all';
             location.reload();
         }
         
-        function exportNutritionData() {
-            alert('Export feature will download nutritional data as CSV. This feature is under development.');
+        // Updated export functions with working download
+        function exportUserData() {
+            // Get current filter
+            const urlParams = new URLSearchParams(window.location.search);
+            const filter = urlParams.get('user_filter') || 'all';
+            
+            // Show loading message
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message info';
+            loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing your user data export...';
+            loadingMsg.style.position = 'fixed';
+            loadingMsg.style.top = '20px';
+            loadingMsg.style.right = '20px';
+            loadingMsg.style.zIndex = '9999';
+            loadingMsg.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+            document.body.appendChild(loadingMsg);
+            
+            // Redirect to export with filter
+            setTimeout(() => {
+                window.location.href = `export-users.php?filter=${filter}`;
+                loadingMsg.remove();
+            }, 500);
         }
         
-        function exportUserData() {
-            alert('Export feature will download user data as CSV. This feature is under development.');
+        function exportNutritionData() {
+            // Show loading message
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message info';
+            loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating nutritional report...';
+            loadingMsg.style.position = 'fixed';
+            loadingMsg.style.top = '20px';
+            loadingMsg.style.right = '20px';
+            loadingMsg.style.zIndex = '9999';
+            loadingMsg.style.boxShadow = '0 5px 15px rgba(0,0,0,0.2)';
+            document.body.appendChild(loadingMsg);
+            
+            // Redirect to nutrition export
+            setTimeout(() => {
+                window.location.href = 'export-nutrition.php';
+                loadingMsg.remove();
+            }, 500);
         }
         
         // User search function

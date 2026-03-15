@@ -1205,8 +1205,468 @@ if (isset($_POST['check_again'])) {
                 grid-template-columns: 1fr;
             }
         }
+        /* Mobile Responsive Styles */
+@media screen and (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 15px;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+    
+    .top-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .welcome-message h1 {
+        font-size: 24px;
+    }
+    
+    .welcome-message p {
+        font-size: 14px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .requirements-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .requirement-card {
+        padding: 20px;
+    }
+    
+    .progress-container-large {
+        padding: 15px;
+    }
+    
+    .progress-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .content-section {
+        padding: 20px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .section-header h2 {
+        font-size: 20px;
+    }
+    
+    .section-header .btn {
+        width: 100%;
+    }
+    
+    .meal-plan-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .day-card {
+        padding: 20px;
+    }
+    
+    .day-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .day-name {
+        font-size: 18px;
+    }
+    
+    .day-header div {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .coverage-indicator {
+        margin-left: 0;
+    }
+    
+    .meal-item {
+        padding: 12px;
+    }
+    
+    .meal-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .meal-name {
+        font-size: 15px;
+    }
+    
+    .ingredients-list {
+        margin-top: 8px;
+    }
+    
+    .ingredient-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .ingredient-source {
+        align-self: flex-start;
+    }
+    
+    .pantry-items-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .pantry-item-card {
+        padding: 12px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        padding: 12px 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-control {
+        padding: 10px 12px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* Small phones */
+@media screen and (max-width: 480px) {
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .user-welcome h3 {
+        font-size: 18px;
+    }
+    
+    .user-welcome p {
+        font-size: 12px;
+    }
+    
+    .logo-text h2 {
+        font-size: 18px;
+    }
+    
+    .logo-text p {
+        font-size: 10px;
+    }
+    
+    .nav-menu a {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .nav-menu i {
+        font-size: 16px;
+    }
+    
+    .welcome-message h1 {
+        font-size: 20px;
+    }
+    
+    .welcome-message p {
+        font-size: 12px;
+    }
+    
+    .progress-header span {
+        font-size: 12px;
+    }
+    
+    .requirement-card h4 {
+        font-size: 16px;
+    }
+    
+    .requirement-card p {
+        font-size: 12px;
+    }
+    
+    .coverage-indicator {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+    
+    .day-cost {
+        font-size: 12px;
+        padding: 3px 10px;
+    }
+    
+    .meal-cost {
+        font-size: 12px;
+    }
+    
+    .meal-type {
+        font-size: 11px;
+    }
+    
+    .ingredient-item {
+        font-size: 11px;
+    }
+    
+    .btn {
+        padding: 8px 15px;
+        font-size: 12px;
+    }
+    
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    .modal-header h3 {
+        font-size: 18px;
+    }
+}
+
+/* Landscape mode */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    .main-content {
+        margin-left: 240px;
+    }
+    
+    .meal-plan-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .requirements-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .nav-menu a,
+    .btn,
+    .requirement-card,
+    .day-card,
+    .meal-item,
+    .pantry-item-card {
+        cursor: default;
+    }
+    
+    .nav-menu a:active,
+    .btn:active {
+        transform: scale(0.98);
+    }
+    
+    input, 
+    select, 
+    textarea,
+    button {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+}
+
+/* Fix for notch phones */
+@supports (padding: max(0px)) {
+    .sidebar,
+    .main-content {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+    }
+}
+
+/* Better scrolling on mobile */
+.sidebar,
+.main-content,
+.shopping-items,
+.meal-plan-grid {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep functionality on mobile */
+@media screen and (max-width: 768px) {
+    .sidebar::-webkit-scrollbar,
+    .shopping-items::-webkit-scrollbar {
+        width: 3px;
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb,
+    .shopping-items::-webkit-scrollbar-thumb {
+        background: var(--primary-green);
+        border-radius: 3px;
+    }
+}
+
+/* Loading states for mobile */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Improved tap targets */
+.nav-menu a,
+.btn,
+.requirement-card,
+.day-card,
+.meal-item {
+    min-height: 44px; /* Apple's recommended minimum touch target size */
+}
+
+/* Fix for modals on mobile */
+.modal {
+    padding: 10px;
+    align-items: flex-end;
+}
+
+@media screen and (max-width: 768px) {
+    .modal-content {
+        max-height: 90vh;
+        border-radius: 15px 15px 0 0;
+        animation: slideUp 0.3s ease-out;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Fix for tables on mobile */
+.nutrition-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.nutrition-table th,
+.nutrition-table td {
+    min-width: 120px;
+}
+
+/* Fix for shopping list on mobile */
+.shopping-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.item-info {
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.item-actions {
+    width: 100%;
+    justify-content: flex-end;
+}
+
+/* Fix for stats grid on mobile */
+.stats-grid {
+    grid-template-columns: 1fr;
+}
+
+.stat-card {
+    flex-direction: row;
+    text-align: left;
+    align-items: center;
+}
+
+.stat-icon {
+    margin-right: 15px;
+    margin-bottom: 0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-info h3 {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.stat-info p {
+    font-size: 13px;
+}
+
+/* Fix for progress bars on mobile */
+.progress-container {
+    margin-bottom: 20px;
+}
+
+.progress-label {
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+}
+
+.progress-label span:last-child {
+    align-self: flex-end;
+}
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
 </head>
 <body>
     <div class="dashboard-container">
