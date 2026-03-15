@@ -2,6 +2,13 @@
 // create-plan.php - Personalized Pantry-Based Meal Plan Generator
 session_start();
 require_once 'config.php';
+// DEBUG: Check session
+echo "<!-- DEBUG: Session user_id = " . ($_SESSION['user_id'] ?? 'not set') . " -->";
+echo "<!-- DEBUG: Session user_name = " . ($_SESSION['full_name'] ?? 'not set') . " -->";
+
+if (!isset($_SESSION['user_id'])) {
+    die("ERROR: No user_id in session! Please login again.");
+}
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -29,14 +36,22 @@ while ($item = mysqli_fetch_assoc($pantry_result)) {
 }
 $has_pantry = count($pantry_items) > 0;
 
-// Get user preferences
+// Get user preferences - CORRECTED VERSION
 $preferences = [];
 $pref_query = "SELECT * FROM user_preferences WHERE user_id = $user_id";
 $pref_result = mysqli_query($conn, $pref_query);
 
-if ($pref_result && mysqli_num_rows($pref_result) > 0) {
-    $preferences = mysqli_fetch_assoc($pref_result);
-    $has_preferences = true;
+if ($pref_result === false) {
+    error_log("DEBUG: Preferences query failed: " . mysqli_error($conn));
+    $message = "Database error when fetching preferences.";
+    $message_type = 'error';
+} else {
+    if (mysqli_num_rows($pref_result) > 0) {
+        $preferences = mysqli_fetch_assoc($pref_result);
+        $has_preferences = true;
+    } else {
+        error_log("DEBUG: No preferences found for user_id: $user_id");
+    }
 }
 
 // Get current budget
@@ -81,21 +96,34 @@ function normalizeKenyanIngredient($name) {
     $name = strtolower(trim($name));
     
     $kenyan_synonyms = [
+        // Maize/Corn products
         'maize flour' => 'corn flour', 'corn flour' => 'maize flour',
         'cornmeal' => 'maize flour', 'posho' => 'maize flour',
+        
+        // Greens
         'sukuma wiki' => 'collard greens', 'collard greens' => 'sukuma wiki',
         'kale' => 'sukuma wiki', 'collards' => 'sukuma wiki',
+        
+        // Vegetables
         'tomato' => 'tomatoes', 'onion' => 'onions',
         'potato' => 'potatoes', 'carrot' => 'carrots',
         'irish potato' => 'potatoes', 'green banana' => 'matoke',
         'matoke' => 'green bananas',
+        
+        // Meat
         'beef' => 'nyama', 'nyama' => 'beef', 'mbuzi' => 'goat meat',
         'goat meat' => 'mbuzi', 'chicken' => 'kuku', 'kuku' => 'chicken',
+        
+        // Grains
         'mahindi' => 'maize', 'beans' => 'maharagwe', 'maharagwe' => 'beans',
         'rice' => 'mchele', 'mchele' => 'rice',
+        
+        // Cooking essentials
         'salt' => 'chumvi', 'chumvi' => 'salt', 'sugar' => 'sukari',
         'sukari' => 'sugar', 'oil' => 'mafuta', 'mafuta' => 'cooking oil',
         'cooking oil' => 'oil',
+        
+        // Others
         'flour' => 'unga', 'unga' => 'flour', 'wheat flour' => 'unga wa ngano',
         'unga wa ngano' => 'wheat flour'
     ];
@@ -116,6 +144,7 @@ function checkKenyanPantry($ingredient_name, $pantry_items, $quantity_needed, $u
             strpos($normalized_have, $normalized_need) !== false || 
             strpos($normalized_need, $normalized_have) !== false) {
             
+            // Simple unit conversion
             $conversion_rate = 1;
             if (($unit_needed == 'kg' && $pantry_item['unit'] == 'g') || 
                 ($unit_needed == 'g' && $pantry_item['unit'] == 'kg')) {
@@ -212,23 +241,22 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
         'pantry_items_used' => [],
         'shopping_cost' => 0,
         'budget_remaining' => 0,
-        'meals_per_day_setting' => 0,
-        'total_calories' => 0,
-        'total_protein' => 0,
-        'total_carbs' => 0,
-        'total_fats' => 0
+        'meals_per_day_setting' => 0
     ];
     
+    // Get user preferences with defaults
     $diet_type = $preferences['diet_type'] ?? 'Balanced';
     $meals_per_day = $preferences['meals_per_day'] ?? 3;
     $budget_amount = $budget['amount'] ?? 3000;
     $meal_plan['meals_per_day_setting'] = $meals_per_day;
     
+    // Get user's meal type preferences
     $include_breakfast = $preferences['pref_breakfast'] ?? 1;
     $include_lunch = $preferences['pref_lunch'] ?? 1;
     $include_dinner = $preferences['pref_dinner'] ?? 1;
     $include_snacks = $preferences['pref_snacks'] ?? 0;
     
+    // Dietary restrictions
     $is_vegetarian = $preferences['vegetarian'] ?? 0;
     $is_vegan = $preferences['vegan'] ?? 0;
     $avoid_pork = $preferences['avoid_pork'] ?? 0;
@@ -237,12 +265,15 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
     $avoid_dairy = $preferences['avoid_dairy'] ?? 0;
     $avoid_eggs = $preferences['avoid_eggs'] ?? 0;
     
+    // Define days of the week
     $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     $daily_budget = $budget_amount / 7;
     
+    // Filter recipes based on diet type and restrictions
     $filtered_recipes = array_filter($all_recipes, function($recipe) use ($diet_type, $is_vegetarian, $is_vegan, $avoid_pork, $avoid_beef, $avoid_fish, $avoid_dairy, $avoid_eggs) {
         $recipe_name = strtolower($recipe['recipe_name']);
         
+        // Check for meat in recipe name if vegetarian/vegan
         if ($is_vegetarian || $is_vegan) {
             $meat_keywords = ['beef', 'chicken', 'fish', 'meat', 'nyama', 'mbuzi', 'kuku'];
             foreach ($meat_keywords as $meat) {
@@ -252,6 +283,7 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
             }
         }
         
+        // Check for dairy/eggs if vegan
         if ($is_vegan) {
             $vegan_forbidden = ['dairy', 'milk', 'cheese', 'yogurt', 'cream', 'butter', 'egg'];
             foreach ($vegan_forbidden as $item) {
@@ -261,19 +293,72 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
             }
         }
         
+        // Check for specific avoided items
         if ($avoid_pork && strpos($recipe_name, 'pork') !== false) return false;
         if ($avoid_beef && strpos($recipe_name, 'beef') !== false) return false;
         if ($avoid_fish && strpos($recipe_name, 'fish') !== false) return false;
         
+        // Map diet types to recipe categories
+        $diet_mapping = [
+            'Balanced' => ['ugali', 'pilau', 'githeri', 'chapati', 'matoke', 'mukimo', 'roast', 'stew'],
+            'Traditional-Kenyan' => ['ugali', 'githeri', 'matoke', 'mukimo', 'nyama', 'chapati', 'pilau'],
+            'Vegetarian' => ['ugali', 'githeri', 'matoke', 'mukimo', 'fruit', 'beans', 'salad', 'soup'],
+            'Vegan' => ['ugali', 'githeri', 'matoke', 'mukimo', 'fruit', 'beans', 'salad', 'soup'],
+            'High-Protein' => ['nyama', 'beef', 'chicken', 'fish', 'beans', 'roast', 'stew', 'egg'],
+            'Weight-Management' => ['fruit', 'salad', 'matoke', 'ugali', 'githeri', 'soup', 'vegetable'],
+            'Keto' => ['nyama', 'beef', 'chicken', 'fish', 'avocado', 'roast', 'salad'],
+            'Modern-Healthy' => ['fruit', 'salad', 'roast', 'grill', 'steam', 'smoothie']
+        ];
+        
+        $allowed_keywords = $diet_mapping[$diet_type] ?? ['ugali', 'pilau', 'githeri', 'chapati'];
+        
+        foreach ($allowed_keywords as $keyword) {
+            if (strpos($recipe_name, $keyword) !== false) {
+                return true;
+            }
+        }
+        
+        // If no specific diet type match, include all except restricted ones
         return true;
     });
     
+    // Reset array indices
     $filtered_recipes = array_values($filtered_recipes);
     
+    // If no recipes match the diet type, use all recipes (excluding restricted ones)
+    if (empty($filtered_recipes)) {
+        $filtered_recipes = array_filter($all_recipes, function($recipe) use ($is_vegetarian, $is_vegan, $avoid_pork, $avoid_beef, $avoid_fish, $avoid_dairy, $avoid_eggs) {
+            $recipe_name = strtolower($recipe['recipe_name']);
+            
+            if ($is_vegetarian || $is_vegan) {
+                $meat_keywords = ['beef', 'chicken', 'fish', 'meat', 'nyama'];
+                foreach ($meat_keywords as $meat) {
+                    if (strpos($recipe_name, $meat) !== false) {
+                        return false;
+                    }
+                }
+            }
+            
+            if ($is_vegan) {
+                $vegan_forbidden = ['dairy', 'milk', 'cheese', 'butter', 'egg'];
+                foreach ($vegan_forbidden as $item) {
+                    if (strpos($recipe_name, $item) !== false) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        });
+        $filtered_recipes = array_values($filtered_recipes);
+    }
+    
+    // If still no recipes, use all recipes
     if (empty($filtered_recipes)) {
         $filtered_recipes = $all_recipes;
     }
     
+    // Calculate pantry coverage for each recipe
     $recipes_with_coverage = [];
     foreach ($filtered_recipes as $recipe) {
         $usage_data = calculateRecipePantryUsage($recipe, $pantry_items);
@@ -284,14 +369,11 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
             'store_cost' => $usage_data['store_cost'],
             'pantry_used' => $usage_data['pantry_used'],
             'needed_from_store' => $usage_data['needed_from_store'],
-            'total_cost' => $recipe['estimated_cost'],
-            'calories' => $recipe['calories'] ?? 0,
-            'protein' => $recipe['protein'] ?? 0,
-            'carbs' => $recipe['carbs'] ?? 0,
-            'fats' => $recipe['fats'] ?? 0
+            'total_cost' => $recipe['estimated_cost']
         ];
     }
     
+    // Sort by pantry coverage (highest first), then by cost (lowest first)
     usort($recipes_with_coverage, function($a, $b) {
         if ($a['pantry_coverage'] == $b['pantry_coverage']) {
             return $a['store_cost'] <=> $b['store_cost'];
@@ -299,6 +381,7 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
         return $b['pantry_coverage'] <=> $a['pantry_coverage'];
     });
     
+    // Group by meal type
     $recipes_by_meal = ['Breakfast' => [], 'Lunch' => [], 'Dinner' => [], 'Snack' => []];
     foreach ($recipes_with_coverage as $recipe_data) {
         $meal_type = $recipe_data['recipe']['meal_type'];
@@ -307,12 +390,14 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
         }
     }
     
+    // Determine which meal types to include based on user preference
     $meal_types_to_include = [];
     if ($include_breakfast) $meal_types_to_include[] = 'Breakfast';
     if ($include_lunch) $meal_types_to_include[] = 'Lunch';
     if ($include_dinner) $meal_types_to_include[] = 'Dinner';
     if ($include_snacks) $meal_types_to_include[] = 'Snack';
     
+    // If no specific meal types selected, use default based on meals_per_day
     if (empty($meal_types_to_include)) {
         if ($meals_per_day == 1) $meal_types_to_include = ['Dinner'];
         elseif ($meals_per_day == 2) $meal_types_to_include = ['Breakfast', 'Dinner'];
@@ -324,16 +409,14 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
     $aggregated_shopping_list = [];
     $aggregated_pantry_used = [];
     
+    // Generate meals for each day
     foreach ($days as $day) {
         $day_meals = [];
         $day_cost = 0;
         $day_pantry_coverage = 0;
         $meals_added = 0;
-        $day_calories = 0;
-        $day_protein = 0;
-        $day_carbs = 0;
-        $day_fats = 0;
         
+        // Add meals based on user preferences
         foreach ($meal_types_to_include as $meal_type) {
             if ($meals_added >= $meals_per_day) break;
             
@@ -349,13 +432,10 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
                             ];
                             $day_cost += $recipe_data['store_cost'];
                             $day_pantry_coverage += $recipe_data['pantry_coverage'];
-                            $day_calories += $recipe_data['calories'];
-                            $day_protein += $recipe_data['protein'];
-                            $day_carbs += $recipe_data['carbs'];
-                            $day_fats += $recipe_data['fats'];
                             $used_recipe_ids[] = $recipe_data['recipe']['recipe_id'];
                             $meals_added++;
                             
+                            // Add to shopping list
                             foreach ($recipe_data['needed_from_store'] as $item) {
                                 $found = false;
                                 foreach ($aggregated_shopping_list as &$existing) {
@@ -371,6 +451,7 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
                                 }
                             }
                             
+                            // Add to pantry used
                             foreach ($recipe_data['pantry_used'] as $used) {
                                 $aggregated_pantry_used[] = $used;
                             }
@@ -382,6 +463,7 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
             }
         }
         
+        // If we need more meals and have room in budget, fill with other available recipes
         while ($meals_added < $meals_per_day) {
             $found_meal = false;
             
@@ -390,8 +472,10 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
                     $potential_day_cost = $day_cost + $recipe_data['store_cost'];
                     
                     if ($potential_day_cost <= $daily_budget * 1.3) {
+                        // Determine which meal type this should be
                         $meal_type = $recipe_data['recipe']['meal_type'];
                         if (!in_array($meal_type, $meal_types_to_include)) {
+                            // Assign to the next needed meal type
                             if ($meals_added == 0 && in_array('Breakfast', $meal_types_to_include)) {
                                 $meal_type = 'Breakfast';
                             } elseif ($meals_added == 1 && in_array('Lunch', $meal_types_to_include)) {
@@ -407,14 +491,11 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
                         ];
                         $day_cost += $recipe_data['store_cost'];
                         $day_pantry_coverage += $recipe_data['pantry_coverage'];
-                        $day_calories += $recipe_data['calories'];
-                        $day_protein += $recipe_data['protein'];
-                        $day_carbs += $recipe_data['carbs'];
-                        $day_fats += $recipe_data['fats'];
                         $used_recipe_ids[] = $recipe_data['recipe']['recipe_id'];
                         $meals_added++;
                         $found_meal = true;
                         
+                        // Add to shopping list and pantry used
                         foreach ($recipe_data['needed_from_store'] as $item) {
                             $found = false;
                             foreach ($aggregated_shopping_list as &$existing) {
@@ -439,7 +520,7 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
                 }
             }
             
-            if (!$found_meal) break;
+            if (!$found_meal) break; // No more suitable recipes
         }
         
         $average_day_coverage = $meals_added > 0 ? 
@@ -450,21 +531,14 @@ function generatePantryBasedMealPlan($pantry_items, $preferences, $budget, $all_
             'meals_count' => $meals_added,
             'cost' => $day_cost,
             'pantry_coverage' => $average_day_coverage,
-            'budget_status' => $day_cost <= $daily_budget ? 'Within Budget' : 'Over Budget',
-            'calories' => $day_calories,
-            'protein' => $day_protein,
-            'carbs' => $day_carbs,
-            'fats' => $day_fats
+            'budget_status' => $day_cost <= $daily_budget ? 'Within Budget' : 'Over Budget'
         ];
         
         $meal_plan['total_cost'] += $day_cost;
         $meal_plan['total_pantry_coverage'] += $average_day_coverage;
-        $meal_plan['total_calories'] += $day_calories;
-        $meal_plan['total_protein'] += $day_protein;
-        $meal_plan['total_carbs'] += $day_carbs;
-        $meal_plan['total_fats'] += $day_fats;
     }
     
+    // Calculate averages
     $meal_plan['total_pantry_coverage'] = count($days) > 0 ? 
                                          $meal_plan['total_pantry_coverage'] / count($days) : 0;
     $meal_plan['shopping_list'] = $aggregated_shopping_list;
@@ -480,13 +554,10 @@ $generated_plan = null;
 if (isset($_POST['generate_plan'])) {
     if ($has_pantry && $has_preferences && $has_budget) {
         $generated_plan = generatePantryBasedMealPlan($pantry_items, $preferences, $current_budget, $all_recipes);
-        
-        // Store in session so it persists after form submission
-        $_SESSION['generated_plan'] = $generated_plan;
-        
         $message = "Personalized meal plan generated based on your pantry items!";
         $message_type = 'success';
         
+        // Track plan generation in user_activity table
         $track_query = "INSERT INTO user_activity (user_id, activity_type, activity_details) 
                         VALUES ($user_id, 'plan_generated', 'Generated pantry-based meal plan')";
         mysqli_query($conn, $track_query);
@@ -502,71 +573,62 @@ if (isset($_POST['generate_plan'])) {
     }
 }
 
-// Retrieve generated plan from session if it exists
-if (isset($_SESSION['generated_plan']) && empty($generated_plan)) {
-    $generated_plan = $_SESSION['generated_plan'];
-}
-
-// Save meal plan
+// Save meal plan - DEBUG VERSION
 if (isset($_POST['save_plan']) && !empty($generated_plan)) {
-    // Start transaction
-    mysqli_begin_transaction($conn);
+    // Show debug info
+    echo "<div style='background: #333; color: #fff; padding: 20px; margin: 20px; border-radius: 10px; font-family: monospace;'>";
+    echo "<h2 style='color: #ff0;'>🔍 DEBUG: Saving Meal Plan</h2>";
     
-    try {
-        $plan_name = "Pantry-Based Plan - " . date('d M Y H:i:s');
-        $total_cost = $generated_plan['total_cost'] + $generated_plan['shopping_cost'];
-        $start_date = date('Y-m-d');
-        $end_date = date('Y-m-d', strtotime('+6 days'));
-        
-        // Insert meal plan with all nutrition data
-        $sql = "INSERT INTO meal_plans (user_id, name, start_date, end_date, total_cost, total_calories, total_protein, total_carbs, total_fats, created_at) 
-                VALUES ($user_id, '$plan_name', '$start_date', '$end_date', $total_cost, {$generated_plan['total_calories']}, {$generated_plan['total_protein']}, {$generated_plan['total_carbs']}, {$generated_plan['total_fats']}, NOW())";
-        
-        if (!mysqli_query($conn, $sql)) {
-            throw new Exception("Error inserting meal plan: " . mysqli_error($conn));
-        }
-        
+    echo "<p><strong>User ID from session:</strong> " . $user_id . "</p>";
+    echo "<p><strong>User Name:</strong> " . $user_name . "</p>";
+    
+    // Check if user exists in database
+    $check_user = mysqli_query($conn, "SELECT * FROM users WHERE user_id = $user_id");
+    if (mysqli_num_rows($check_user) > 0) {
+        $user_data = mysqli_fetch_assoc($check_user);
+        echo "<p style='color: #0f0;'>✅ User found: " . $user_data['email'] . "</p>";
+    } else {
+        echo "<p style='color: #f00;'>❌ User NOT found in database!</p>";
+    }
+    
+    $plan_name = "Pantry-Based Plan - " . date('d M Y H:i:s');
+    $total_cost = $generated_plan['total_cost'] + $generated_plan['shopping_cost'];
+    $start_date = date('Y-m-d');
+    $end_date = date('Y-m-d', strtotime('+6 days'));
+    
+    echo "<p><strong>Plan Name:</strong> $plan_name</p>";
+    echo "<p><strong>Total Cost:</strong> $total_cost</p>";
+    echo "<p><strong>Shopping List Items:</strong> " . count($generated_plan['shopping_list']) . "</p>";
+    
+    // Insert meal plan with created_at
+    $sql = "INSERT INTO meal_plans (user_id, name, start_date, end_date, total_cost, created_at) 
+            VALUES ($user_id, '$plan_name', '$start_date', '$end_date', $total_cost, NOW())";
+    
+    echo "<p><strong>SQL Query:</strong> " . htmlspecialchars($sql) . "</p>";
+    
+    if (mysqli_query($conn, $sql)) {
         $plan_id = mysqli_insert_id($conn);
+        echo "<p style='color: #0f0;'>✅ Meal plan inserted with ID: $plan_id</p>";
         
-        // Save meals for each day
-        $meals_saved = 0;
-        $days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        $current_monday = date('Y-m-d', strtotime('monday this week'));
-        
-        foreach ($generated_plan['days'] as $index => $day_data) {
-            $scheduled_date = date('Y-m-d', strtotime($current_monday . ' + ' . $index . ' days'));
-            
-            foreach ($day_data['meals'] as $meal_entry) {
-                $meal_data = $meal_entry['data'];
-                $meal_type = $meal_entry['meal_type'];
-                $recipe_id = $meal_data['recipe']['recipe_id'];
-                $meal_name = mysqli_real_escape_string($conn, $meal_data['recipe']['recipe_name']);
-                
-                $meal_sql = "INSERT INTO meals (mealplan_id, recipe_id, meal_name, meal_type, scheduled_date, created_at) 
-                            VALUES ($plan_id, $recipe_id, '$meal_name', '$meal_type', '$scheduled_date', NOW())";
-                
-                if (!mysqli_query($conn, $meal_sql)) {
-                    throw new Exception("Error inserting meal: " . mysqli_error($conn));
-                }
-                $meals_saved++;
-            }
+        // Verify the plan was inserted
+        $verify = mysqli_query($conn, "SELECT * FROM meal_plans WHERE mealplan_id = $plan_id");
+        if (mysqli_num_rows($verify) > 0) {
+            $inserted = mysqli_fetch_assoc($verify);
+            echo "<p style='color: #0f0;'>✅ Verified: Plan exists in database</p>";
+            echo "<p>Created at: " . $inserted['created_at'] . "</p>";
+        } else {
+            echo "<p style='color: #f00;'>❌ Verification failed - plan not found after insert!</p>";
         }
         
-        // Insert into mealplan_nutrition table
-        $nutrition_sql = "INSERT INTO mealplan_nutrition (mealplan_id, user_id, total_calories, total_protein, total_carbs, total_fats, total_cost, calculation_date, created_at) 
-                         VALUES ($plan_id, $user_id, {$generated_plan['total_calories']}, {$generated_plan['total_protein']}, {$generated_plan['total_carbs']}, {$generated_plan['total_fats']}, $total_cost, CURDATE(), NOW())";
-        
-        if (!mysqli_query($conn, $nutrition_sql)) {
-            throw new Exception("Error inserting nutrition summary: " . mysqli_error($conn));
-        }
-        
-        // Save shopping list items
         $shopping_items_saved = 0;
         
-        foreach ($generated_plan['shopping_list'] as $item) {
+        // Save shopping list items
+        foreach ($generated_plan['shopping_list'] as $index => $item) {
             $item_name = mysqli_real_escape_string($conn, $item['item']);
             $quantity = floatval($item['quantity']);
             $unit = mysqli_real_escape_string($conn, $item['unit']);
+            
+            echo "<p><strong>Item " . ($index+1) . ":</strong> $item_name - $quantity $unit</p>";
             
             // Try to find existing food item
             $food_query = "SELECT fooditem_id FROM food_items WHERE LOWER(name) = LOWER('$item_name') LIMIT 1";
@@ -575,14 +637,17 @@ if (isset($_POST['save_plan']) && !empty($generated_plan)) {
             if ($food_result && mysqli_num_rows($food_result) > 0) {
                 $food_row = mysqli_fetch_assoc($food_result);
                 $fooditem_id = $food_row['fooditem_id'];
+                echo "<p>✅ Found existing food item ID: $fooditem_id</p>";
             } else {
                 // Insert new food item
                 $insert_food = "INSERT INTO food_items (name, category, unit, created_at) 
                                VALUES ('$item_name', 'Other', '$unit', NOW())";
                 if (mysqli_query($conn, $insert_food)) {
                     $fooditem_id = mysqli_insert_id($conn);
+                    echo "<p>✅ Created new food item ID: $fooditem_id</p>";
                 } else {
                     $fooditem_id = 1;
+                    echo "<p style='color: #f00;'>❌ Failed to create food item, using ID 1</p>";
                 }
             }
             
@@ -592,37 +657,44 @@ if (isset($_POST['save_plan']) && !empty($generated_plan)) {
             
             if (mysqli_query($conn, $shop_sql)) {
                 $shopping_items_saved++;
+                $shop_id = mysqli_insert_id($conn);
+                echo "<p style='color: #0f0;'>✅ Shopping item saved with ID: $shop_id</p>";
+            } else {
+                echo "<p style='color: #f00;'>❌ Failed: " . mysqli_error($conn) . "</p>";
             }
         }
         
-        // Update budget spent if there's an active budget
-        $budget_update = "UPDATE user_budgets SET current_spending = current_spending + $total_cost 
-                         WHERE user_id = $user_id AND status = 'Active' 
-                         AND start_date <= CURDATE() AND end_date >= CURDATE()";
-        mysqli_query($conn, $budget_update);
+        echo "<p><strong>Total shopping items saved:</strong> $shopping_items_saved</p>";
         
-        // Track activity
-        $track_query = "INSERT INTO user_activity (user_id, activity_type, activity_details) 
-                        VALUES ($user_id, 'plan_generated', 'Generated and saved pantry-based meal plan with $meals_saved meals')";
-        mysqli_query($conn, $track_query);
+        // Final verification - count all plans for this user
+        $count_plans = mysqli_query($conn, "SELECT COUNT(*) as total FROM meal_plans WHERE user_id = $user_id");
+        $count_row = mysqli_fetch_assoc($count_plans);
+        echo "<p><strong>Total meal plans for user $user_id now:</strong> " . $count_row['total'] . "</p>";
         
-        // Commit transaction
-        mysqli_commit($conn);
+        // Show all plans for this user
+        $all_plans = mysqli_query($conn, "SELECT mealplan_id, name, created_at FROM meal_plans WHERE user_id = $user_id ORDER BY mealplan_id DESC");
+        echo "<p><strong>All plans for this user:</strong></p>";
+        echo "<ul>";
+        while ($plan = mysqli_fetch_assoc($all_plans)) {
+            echo "<li>ID: {$plan['mealplan_id']} - {$plan['name']} - {$plan['created_at']}</li>";
+        }
+        echo "</ul>";
         
-        // Clear the session
-        unset($_SESSION['generated_plan']);
-        
-        // Redirect to meal_plan.php with success message
-        header("Location: meal_plan.php?success=1&plan_id=$plan_id");
+        echo "<div style='margin-top: 30px; padding: 20px; background: #4CAF50; color: white; border-radius: 10px;'>";
+        echo "<h3>✅ DEBUG COMPLETE</h3>";
+        echo "<p>Check the output above to see what happened.</p>";
+        echo "<p><a href='shopping-list.php' style='color: white; font-weight: bold;'>👉 Go to Shopping List</a></p>";
+        echo "<p><a href='nutrition-summary.php' style='color: white; font-weight: bold;'>👉 Go to Nutrition Summary</a></p>";
+        echo "</div>";
+        echo "</div>";
         exit();
         
-    } catch (Exception $e) {
-        mysqli_rollback($conn);
-        $message = "Error saving plan: " . $e->getMessage();
-        $message_type = 'error';
+    } else {
+        echo "<p style='color: #f00;'>❌ Error inserting meal plan: " . mysqli_error($conn) . "</p>";
+        echo "</div>";
+        exit();
     }
 }
-
 // Handle check again request
 if (isset($_POST['check_again'])) {
     header("Location: create-plan.php");
@@ -1045,7 +1117,7 @@ if (isset($_POST['check_again'])) {
         
         .meal-plan-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 25px;
             margin-top: 30px;
         }
@@ -1126,49 +1198,18 @@ if (isset($_POST['check_again'])) {
         .meal-name {
             font-weight: 600;
             color: var(--text-dark);
-            font-size: 16px;
-        }
-        
-        .meal-type {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-top: 3px;
         }
         
         .meal-cost {
             color: var(--primary-green);
             font-weight: 600;
+            font-size: 14px;
         }
         
-        .ingredients-list {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border-color);
-        }
-        
-        .ingredient-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            padding: 4px 0;
+        .meal-desc {
             color: var(--text-light);
-        }
-        
-        .ingredient-source {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
-        
-        .source-pantry {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .source-store {
-            background: #fff3cd;
-            color: #856404;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
         
         @media (max-width: 768px) {
@@ -1259,6 +1300,19 @@ if (isset($_POST['check_again'])) {
             <?php if ($message): ?>
                 <div class="message <?php echo $message_type; ?>">
                     <?php echo htmlspecialchars($message); ?>
+                    <?php if ($message_type == 'error'): ?>
+                        <div style="font-size: 12px; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                            <strong>Current Status:</strong><br>
+                            User ID: <?php echo $user_id; ?><br>
+                            Has Pantry: <?php echo $has_pantry ? 'Yes (' . count($pantry_items) . ' items)' : 'No'; ?><br>
+                            Has Preferences: <?php echo $has_preferences ? 'Yes' : 'No'; ?><br>
+                            Has Budget: <?php echo $has_budget ? 'Yes' : 'No'; ?><br>
+                            <?php if ($has_preferences && !empty($preferences)): ?>
+                                Diet Type: <?php echo htmlspecialchars($preferences['diet_type'] ?? 'Not set'); ?><br>
+                                Meals/Day: <?php echo htmlspecialchars($preferences['meals_per_day'] ?? 'Not set'); ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             
@@ -1319,11 +1373,19 @@ if (isset($_POST['check_again'])) {
                                 <?php endif; ?>
                             <?php else: ?>
                                 <span class="badge badge-warning">Pending</span>
+                                <p style="font-size: 12px; color: var(--accent-red); margin-top: 5px;">
+                                    <i class="fas fa-exclamation-circle"></i> Click below to set
+                                </p>
                             <?php endif; ?>
                         </div>
                         <a href="preferences.php" class="btn btn-sm <?php echo $has_preferences ? 'btn-outline' : 'btn-primary'; ?>" style="margin-top: 15px;">
                             <?php echo $has_preferences ? 'View Preferences' : 'Set Preferences Now'; ?>
                         </a>
+                        <?php if (!$has_preferences): ?>
+                            <p style="font-size: 11px; color: var(--text-light); margin-top: 8px;">
+                                Save your preferences first
+                            </p>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="requirement-card <?php echo $has_budget ? 'completed' : 'incomplete'; ?>">
@@ -1367,12 +1429,46 @@ if (isset($_POST['check_again'])) {
                         <p style="color: var(--text-light);">
                             Please complete all three setup steps above to generate your personalized meal plan
                         </p>
+                        <p style="color: var(--text-light); font-size: 12px; margin-top: 15px;">
+                            <strong>Current Status:</strong><br>
+                            Pantry: <?php echo $has_pantry ? '✓ Completed' : '✗ Pending'; ?><br>
+                            Preferences: <?php echo $has_preferences ? '✓ Completed' : '✗ Pending'; ?><br>
+                            Budget: <?php echo $has_budget ? '✓ Completed' : '✗ Pending'; ?>
+                        </p>
                     </div>
                 <?php endif; ?>
             </div>
             
+            <!-- Troubleshooting Section -->
+            <?php if (!$has_preferences && isset($_SESSION['user_id'])): ?>
+                <div class="content-section" style="background: #fff3cd; border: 2px solid #ffc107;">
+                    <h4 style="color: #856404;">
+                        <i class="fas fa-question-circle"></i> Troubleshooting Preferences
+                    </h4>
+                    <p style="color: #856404; margin-bottom: 15px;">
+                        It seems your preferences are not being detected. Here are some things to try:
+                    </p>
+                    <ol style="color: #856404; padding-left: 20px; margin-bottom: 20px;">
+                        <li>Go to <a href="preferences.php" style="font-weight: bold; color: #856404;">Preferences page</a></li>
+                        <li>Make sure you click "Save Preferences" button</li>
+                        <li>Check that all fields are filled (especially Diet Type)</li>
+                        <li>Return to this page and try again</li>
+                    </ol>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="preferences.php" class="btn btn-warning">
+                            <i class="fas fa-sliders-h"></i> Go to Preferences Page
+                        </a>
+                        <form method="POST" action="" style="display: inline;">
+                            <button type="submit" name="check_again" class="btn btn-outline" style="border-color: #856404; color: #856404;">
+                                <i class="fas fa-sync-alt"></i> Check Again
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
             <?php if (!empty($generated_plan)): ?>
-                <!-- Generated Plan Display Section -->
+                <!-- Add summary of user settings -->
                 <div class="content-section" style="background: linear-gradient(135deg, #e8f8f1, #d5f4e6);">
                     <h3 style="color: var(--dark-green); margin-bottom: 15px;">
                         <i class="fas fa-user-cog"></i> Your Meal Plan Settings
@@ -1383,6 +1479,22 @@ if (isset($_POST['check_again'])) {
                             <div style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
                                 <?php echo $generated_plan['meals_per_day_setting']; ?>
                             </div>
+                            <div style="font-size: 14px; color: var(--text-dark); margin-top: 5px;">
+                                <?php 
+                                $meal_types = [];
+                                $pref_breakfast = $preferences['pref_breakfast'] ?? 1;
+                                $pref_lunch = $preferences['pref_lunch'] ?? 1;
+                                $pref_dinner = $preferences['pref_dinner'] ?? 1;
+                                $pref_snacks = $preferences['pref_snacks'] ?? 0;
+                                
+                                if ($pref_breakfast) $meal_types[] = 'Breakfast';
+                                if ($pref_lunch) $meal_types[] = 'Lunch';
+                                $meal_types[] = 'Dinner'; // Always include dinner as fallback
+                                if ($pref_snacks) $meal_types[] = 'Snack';
+                                
+                                echo implode(', ', array_unique($meal_types));
+                                ?>
+                            </div>
                         </div>
                         
                         <div style="background: white; padding: 15px 25px; border-radius: 10px; min-width: 200px;">
@@ -1390,12 +1502,30 @@ if (isset($_POST['check_again'])) {
                             <div style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
                                 KES <?php echo number_format($current_budget['amount'] ?? 0, 0); ?>
                             </div>
+                            <div style="font-size: 14px; color: var(--text-dark); margin-top: 5px;">
+                                KES <?php echo number_format(($current_budget['amount'] ?? 0) / 7, 0); ?> per day
+                            </div>
                         </div>
                         
                         <div style="background: white; padding: 15px 25px; border-radius: 10px; min-width: 200px;">
                             <div style="font-size: 12px; color: var(--text-light);">Diet Type</div>
                             <div style="font-size: 24px; font-weight: bold; color: var(--primary-green);">
                                 <?php echo htmlspecialchars($preferences['diet_type'] ?? 'Balanced'); ?>
+                            </div>
+                            <div style="font-size: 14px; color: var(--text-dark); margin-top: 5px;">
+                                <?php 
+                                $diet_details = [];
+                                if ($preferences['vegetarian'] ?? 0) $diet_details[] = 'Vegetarian';
+                                if ($preferences['vegan'] ?? 0) $diet_details[] = 'Vegan';
+                                if ($preferences['high_protein'] ?? 0) $diet_details[] = 'High Protein';
+                                if ($preferences['low_carb'] ?? 0) $diet_details[] = 'Low Carb';
+                                
+                                if (!empty($diet_details)) {
+                                    echo implode(', ', $diet_details);
+                                } else {
+                                    echo 'Personalized for your preferences';
+                                }
+                                ?>
                             </div>
                         </div>
                     </div>
@@ -1412,6 +1542,10 @@ if (isset($_POST['check_again'])) {
                                 <?php echo number_format($generated_plan['total_pantry_coverage'], 0); ?>%
                             </div>
                             <p style="color: var(--text-light); margin-top: 10px;">Pantry Utilization</p>
+                            <div style="height: 10px; background: var(--border-color); border-radius: 5px; margin-top: 15px; overflow: hidden;">
+                                <div style="height: 100%; width: <?php echo $generated_plan['total_pantry_coverage']; ?>%; 
+                                            background: linear-gradient(90deg, var(--primary-green), var(--secondary-green));"></div>
+                            </div>
                         </div>
                         
                         <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
@@ -1419,6 +1553,9 @@ if (isset($_POST['check_again'])) {
                                 <?php echo count($generated_plan['pantry_items_used']); ?>
                             </div>
                             <p style="color: var(--text-light); margin-top: 10px;">Items From Your Pantry</p>
+                            <div style="margin-top: 15px; font-size: 14px; color: var(--primary-green);">
+                                <i class="fas fa-save"></i> Using what you already have!
+                            </div>
                         </div>
                         
                         <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
@@ -1426,14 +1563,57 @@ if (isset($_POST['check_again'])) {
                                 KES <?php echo number_format($generated_plan['shopping_cost'], 0); ?>
                             </div>
                             <p style="color: var(--text-light); margin-top: 10px;">Additional Shopping</p>
+                            <div style="margin-top: 15px; font-size: 14px; color: var(--accent-blue);">
+                                <i class="fas fa-shopping-cart"></i> <?php echo count($generated_plan['shopping_list']); ?> items needed
+                            </div>
                         </div>
                     </div>
+                    
+                    <?php if (!empty($generated_plan['pantry_items_used'])): ?>
+                        <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                            <h4 style="color: var(--dark-green); margin-bottom: 15px;">
+                                <i class="fas fa-check"></i> Items From Your Pantry Being Used
+                            </h4>
+                            <div class="pantry-items-grid">
+                                <?php 
+                                $unique_pantry_items = [];
+                                foreach ($generated_plan['pantry_items_used'] as $used) {
+                                    $key = $used['pantry_item'];
+                                    if (!isset($unique_pantry_items[$key])) {
+                                        $unique_pantry_items[$key] = [
+                                            'pantry_item' => $used['pantry_item'],
+                                            'quantity' => 0,
+                                            'recipes' => []
+                                        ];
+                                    }
+                                    $unique_pantry_items[$key]['quantity'] += $used['quantity_used'];
+                                    $unique_pantry_items[$key]['recipes'][] = $used['item'];
+                                }
+                                
+                                foreach ($unique_pantry_items as $item): 
+                                ?>
+                                    <div class="pantry-item-card">
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                            <i class="fas fa-check-circle" style="color: var(--primary-green);"></i>
+                                            <strong style="color: var(--text-dark);"><?php echo htmlspecialchars($item['pantry_item']); ?></strong>
+                                        </div>
+                                        <div style="font-size: 14px; color: var(--text-light);">
+                                            Quantity: <?php echo number_format($item['quantity'], 2); ?> units
+                                        </div>
+                                        <div class="usage-badge">
+                                            Used in <?php echo count(array_unique($item['recipes'])); ?> recipe(s)
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 
-                <!-- Weekly Meal Plan Display with Ingredients -->
+                <!-- Weekly Meal Plan with Days -->
                 <div class="content-section">
                     <h3 style="color: var(--dark-green); margin-bottom: 25px;">
-                        <i class="fas fa-calendar-week"></i> Your Weekly Meal Plan
+                        Weekly Meal Plan (<?php echo $generated_plan['meals_per_day_setting']; ?> meals/day)
                     </h3>
                     
                     <div class="meal-plan-grid">
@@ -1441,6 +1621,8 @@ if (isset($_POST['check_again'])) {
                             $day_coverage_class = 'coverage-high';
                             if ($day_data['pantry_coverage'] < 40) $day_coverage_class = 'coverage-low';
                             elseif ($day_data['pantry_coverage'] < 70) $day_coverage_class = 'coverage-medium';
+                            
+                            $budget_status_class = $day_data['cost'] <= ($current_budget['amount'] ?? 0) / 7 ? 'coverage-high' : 'coverage-low';
                         ?>
                             <div class="day-card">
                                 <div class="day-header">
@@ -1449,27 +1631,47 @@ if (isset($_POST['check_again'])) {
                                         <span class="coverage-indicator <?php echo $day_coverage_class; ?>">
                                             <?php echo number_format($day_data['pantry_coverage'], 0); ?>% pantry
                                         </span>
-                                        <span class="day-cost">KES <?php echo number_format($day_data['cost'], 0); ?></span>
+                                        <span class="coverage-indicator <?php echo $budget_status_class; ?>">
+                                            KES <?php echo number_format($day_data['cost'], 0); ?>
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 <div style="font-size: 13px; color: var(--text-light); margin-bottom: 15px;">
                                     <i class="fas fa-utensils"></i> 
                                     <?php echo $day_data['meals_count']; ?> meals planned
+                                    <?php if ($day_data['budget_status'] == 'Over Budget'): ?>
+                                        <span style="color: var(--accent-red); margin-left: 10px;">
+                                            <i class="fas fa-exclamation-triangle"></i> Over daily budget
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <div class="meals-list">
                                     <?php foreach ($day_data['meals'] as $meal_entry): 
                                         $meal_data = $meal_entry['data'];
                                         $meal_type = $meal_entry['meal_type'];
+                                        $coverage = $meal_data['pantry_coverage'];
+                                        $coverage_class = 'coverage-high';
+                                        if ($coverage < 40) $coverage_class = 'coverage-low';
+                                        elseif ($coverage < 70) $coverage_class = 'coverage-medium';
+                                        
+                                        $meal_type_color = '';
+                                        switch($meal_type) {
+                                            case 'Breakfast': $meal_type_color = '#f39c12'; break;
+                                            case 'Lunch': $meal_type_color = '#2ecc71'; break;
+                                            case 'Dinner': $meal_type_color = '#3498db'; break;
+                                            case 'Snack': $meal_type_color = '#9b59b6'; break;
+                                            default: $meal_type_color = '#7f8c8d';
+                                        }
                                     ?>
-                                        <div class="meal-item <?php echo strtolower($meal_type); ?>">
-                                            <div class="meal-header">
+                                        <div class="meal-item <?php echo strtolower($meal_type); ?>" style="border-left-color: <?php echo $meal_type_color; ?>;">
+                                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                                                 <div>
-                                                    <div class="meal-name">
+                                                    <div style="font-weight: 600; color: var(--text-dark);">
                                                         <?php echo htmlspecialchars($meal_data['recipe']['recipe_name']); ?>
                                                     </div>
-                                                    <div class="meal-type">
+                                                    <div style="font-size: 12px; color: <?php echo $meal_type_color; ?>; font-weight: 500;">
                                                         <i class="fas fa-<?php 
                                                             echo $meal_type == 'Breakfast' ? 'sun' : 
                                                                  ($meal_type == 'Lunch' ? 'sun' : 
@@ -1478,45 +1680,59 @@ if (isset($_POST['check_again'])) {
                                                         <?php echo $meal_type; ?>
                                                     </div>
                                                 </div>
-                                                <div class="meal-cost">
-                                                    KES <?php echo number_format($meal_data['store_cost'], 0); ?>
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <span class="coverage-indicator <?php echo $coverage_class; ?>" style="margin-left: 0;">
+                                                        <?php echo number_format($coverage, 0); ?>% pantry
+                                                    </span>
+                                                    <span style="color: var(--primary-green); font-weight: 600; font-size: 14px;">
+                                                        KES <?php echo number_format($meal_data['store_cost'], 0); ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                             
-                                            <?php if (!empty($meal_data['recipe']['description'])): ?>
-                                                <p style="font-size: 13px; color: var(--text-light); margin: 10px 0;">
-                                                    <?php echo htmlspecialchars($meal_data['recipe']['description']); ?>
-                                                </p>
-                                            <?php endif; ?>
+                                            <p class="meal-desc" style="margin-bottom: 15px;">
+                                                <?php echo htmlspecialchars($meal_data['recipe']['description'] ?? 'Traditional Kenyan meal'); ?>
+                                            </p>
                                             
-                                            <div class="ingredients-list">
+                                            <!-- Ingredients List -->
+                                            <div style="margin-top: 10px;">
                                                 <div style="font-size: 12px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px;">
                                                     Ingredients (<?php echo count($meal_data['recipe']['ingredients']); ?>):
                                                 </div>
-                                                <?php foreach ($meal_data['recipe']['ingredients'] as $ingredient): 
-                                                    $source = 'store';
-                                                    $source_class = 'source-store';
-                                                    $source_text = 'To buy';
-                                                    
-                                                    foreach ($meal_data['pantry_used'] as $used) {
-                                                        if ($used['item'] == $ingredient['name']) {
-                                                            $source = 'pantry';
-                                                            $source_class = 'source-pantry';
-                                                            $source_text = 'From pantry';
-                                                            break;
+                                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                                    <?php foreach ($meal_data['recipe']['ingredients'] as $ingredient): 
+                                                        $source = 'store';
+                                                        $source_class = 'source-store';
+                                                        $source_icon = 'fas fa-shopping-cart';
+                                                        
+                                                        foreach ($meal_data['pantry_used'] as $used) {
+                                                            if ($used['item'] == $ingredient['name']) {
+                                                                $source = 'pantry';
+                                                                $source_class = 'source-pantry';
+                                                                $source_icon = 'fas fa-home';
+                                                                break;
+                                                            }
                                                         }
-                                                    }
-                                                ?>
-                                                    <div class="ingredient-item">
-                                                        <span>
-                                                            <?php echo htmlspecialchars($ingredient['name']); ?> 
-                                                            (<?php echo $ingredient['quantity']; ?> <?php echo $ingredient['unit']; ?>)
-                                                        </span>
-                                                        <span class="ingredient-source <?php echo $source_class; ?>">
-                                                            <?php echo $source_text; ?>
-                                                        </span>
-                                                    </div>
-                                                <?php endforeach; ?>
+                                                    ?>
+                                                        <div style="background: white; padding: 6px 10px; border-radius: 6px; 
+                                                                    border: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                                                            <i class="<?php echo $source_icon; ?>" 
+                                                               style="color: <?php echo $source == 'pantry' ? 'var(--primary-green)' : 'var(--accent-orange)'; ?>; font-size: 11px;">
+                                                            </i>
+                                                            <div>
+                                                                <div style="font-weight: 500;">
+                                                                    <?php echo htmlspecialchars($ingredient['name']); ?>
+                                                                </div>
+                                                                <div style="font-size: 10px; color: var(--text-light);">
+                                                                    <?php echo $ingredient['quantity']; ?> <?php echo $ingredient['unit']; ?>
+                                                                    <span class="ingredient-source <?php echo $source_class; ?>" style="font-size: 9px;">
+                                                                        <?php echo $source == 'pantry' ? 'From pantry' : 'To buy'; ?>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -1540,6 +1756,9 @@ if (isset($_POST['check_again'])) {
                                     echo $total_meals;
                                     ?>
                                 </div>
+                                <div style="font-size: 13px; color: var(--text-light);">
+                                    <?php echo $generated_plan['meals_per_day_setting']; ?> meals/day × 7 days
+                                </div>
                             </div>
                             
                             <div>
@@ -1547,12 +1766,19 @@ if (isset($_POST['check_again'])) {
                                 <div style="font-size: 24px; font-weight: bold; color: var(--text-dark);">
                                     KES <?php echo number_format($generated_plan['total_cost'], 0); ?>
                                 </div>
+                                <div style="font-size: 13px; color: var(--text-light);">
+                                    Food + Shopping: KES <?php echo number_format($generated_plan['total_cost'] + $generated_plan['shopping_cost'], 0); ?>
+                                </div>
                             </div>
                             
                             <div>
-                                <div style="font-size: 12px; color: var(--text-light);">Total Calories</div>
-                                <div style="font-size: 24px; font-weight: bold; color: var(--accent-orange);">
-                                    <?php echo number_format($generated_plan['total_calories']); ?>
+                                <div style="font-size: 12px; color: var(--text-light);">Budget Status</div>
+                                <div style="font-size: 24px; font-weight: bold; 
+                                            color: <?php echo $generated_plan['budget_remaining'] >= 0 ? 'var(--primary-green)' : 'var(--accent-red)'; ?>;">
+                                    KES <?php echo number_format(abs($generated_plan['budget_remaining']), 0); ?>
+                                </div>
+                                <div style="font-size: 13px; color: var(--text-light);">
+                                    <?php echo $generated_plan['budget_remaining'] >= 0 ? 'Remaining' : 'Over Budget'; ?>
                                 </div>
                             </div>
                         </div>
@@ -1564,6 +1790,9 @@ if (isset($_POST['check_again'])) {
                         <h3 style="color: var(--accent-orange); margin-bottom: 20px;">
                             <i class="fas fa-shopping-cart"></i> Shopping List
                         </h3>
+                        <p style="color: var(--text-light); margin-bottom: 20px;">
+                            Items you need to purchase for this meal plan
+                        </p>
                         
                         <div style="max-height: 300px; overflow-y: auto;">
                             <?php foreach ($generated_plan['shopping_list'] as $item): ?>
@@ -1599,7 +1828,44 @@ if (isset($_POST['check_again'])) {
                         </form>
                     </div>
                 <?php endif; ?>
+            <?php elseif ($has_pantry && $has_preferences && $has_budget): ?>
+                <div class="content-section" style="text-align: center;">
+                    <div class="loading">
+                        <i class="fas fa-utensils" style="font-size: 60px; color: var(--border-color); margin-bottom: 20px;"></i>
+                        <h4 style="color: var(--text-dark); margin-bottom: 10px;">Ready to Generate</h4>
+                        <p style="color: var(--text-light); margin-bottom: 30px;">
+                            Click the "Generate Personalized Meal Plan" button above to create your weekly meal plan
+                        </p>
+                    </div>
+                </div>
             <?php endif; ?>
+            
+            <div class="content-section">
+                <h3>Meal Planning Tips</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
+                        <i class="fas fa-recycle" style="color: var(--primary-green); font-size: 24px; margin-bottom: 10px;"></i>
+                        <h4>Use Pantry First</h4>
+                        <p style="color: var(--text-light); font-size: 14px;">
+                            This plan prioritizes items you already have to reduce waste
+                        </p>
+                    </div>
+                    <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
+                        <i class="fas fa-calendar-check" style="color: var(--accent-orange); font-size: 24px; margin-bottom: 10px;"></i>
+                        <h4>Weekly Planning</h4>
+                        <p style="color: var(--text-light); font-size: 14px;">
+                            Plan meals for the whole week to save time and money
+                        </p>
+                    </div>
+                    <div style="background: var(--light-bg); padding: 20px; border-radius: 10px;">
+                        <i class="fas fa-balance-scale" style="color: var(--accent-blue); font-size: 24px; margin-bottom: 10px;"></i>
+                        <h4>Budget Friendly</h4>
+                        <p style="color: var(--text-light); font-size: 14px;">
+                            Plan stays within your budget while using local ingredients
+                        </p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 </body>
